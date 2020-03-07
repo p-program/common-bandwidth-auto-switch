@@ -4,3 +4,6 @@ auto_commit:
 	git add .
 	git commit -am "$(now)"
 	git push
+
+build:
+	go build

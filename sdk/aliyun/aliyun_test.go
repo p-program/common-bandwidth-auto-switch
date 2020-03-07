@@ -9,10 +9,15 @@ import (
 )
 
 func prepareSDK(t *testing.T) *AliyunSDK {
+	config := prepareConfig(t)
+	aliyunSDKConfig := config.AliyunConfig
+	return NewAliyunSDK(&aliyunSDKConfig)
+}
+
+func prepareConfig(t *testing.T) *model.ProjectConfig {
 	config := model.NewProjectConfig()
 	path := path.Join("../", "../", "config.yaml")
 	err := config.LoadYAML(path)
 	assert.Nil(t, err)
-	aliyunSDKConfig := config.AliyunConfig
-	return NewAliyunSDK(&aliyunSDKConfig)
+	return config
 }
