@@ -12,11 +12,6 @@ func TestLoadYAML(t *testing.T) {
 	path := path.Join("../", "config.yaml")
 	err := config.LoadYAML(path)
 	assert.Nil(t, err)
-	t.Logf(config.Frequency)
-	t.Logf("%d", config.MaxBandwidth)
-	assert.Greater(t, config.MaxBandwidth, 0)
-	t.Logf("%d", config.MinBandwidth)
-	assert.Greater(t, config.MinBandwidth, 0)
 	aliyunConfig := config.AliyunConfig
 	assert.Greater(t, len(aliyunConfig.Region), 0)
 	assert.Greater(t, len(aliyunConfig.AccessKeyId), 0)

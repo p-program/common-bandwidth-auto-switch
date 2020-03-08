@@ -8,10 +8,8 @@ import (
 )
 
 type ProjectConfig struct {
-	Frequency    string       `yaml:"frequency"`
-	MaxBandwidth int          `yaml:"maxBandwidth"`
-	MinBandwidth int          `yaml:"minBandwidth"`
-	AliyunConfig AliyunConfig `yaml:"aliyun"`
+	CommonBandwidthPackages []CommonBandwidthPackage `yaml:"commonBandwidthPackages"`
+	AliyunConfig            AliyunConfig             `yaml:"aliyun"`
 	// for copy
 	// `yaml:""`
 }

@@ -8,8 +8,7 @@ import (
 	"github.com/zeusro/common-bandwidth-auto-switch/model"
 )
 
-func prepareSDK(t *testing.T) *AliyunSDK {
-	config := prepareConfig(t)
+func prepareSDK(config *model.ProjectConfig) *AliyunSDK {
 	aliyunSDKConfig := config.AliyunConfig
 	return NewAliyunSDK(&aliyunSDKConfig)
 }

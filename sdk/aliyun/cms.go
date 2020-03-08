@@ -3,6 +3,7 @@ package aliyun
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -27,14 +28,20 @@ const (
 // DescribeMetricList see
 //
 // 共享带宽监控项 https://help.aliyun.com/document_detail/28619.html#title-hjj-o69-elv
-func (sdk *AliyunSDK) DescribeMetricList(metricName string, frequency time.Duration) (dataPoints []model.Datapoint, err error) {
+func (sdk *AliyunSDK) DescribeMetricList(metricName string, cbp *model.CommonBandwidthPackage) (dataPoints []model.Datapoint, err error) {
 	now := time.Now()
+	frequency, err := time.ParseDuration(cbp.CheckFrequency)
+	log.Info().Msgf("duration: %s", frequency.String())
+	if err != nil {
+		return nil, err
+	}
 	startTime := now.Add(-frequency).Unix() * 1000
 	client := sdk.GetCMSClient()
 	request := cms.CreateDescribeMetricListRequest()
 	request.Scheme = "https"
 	request.Namespace = "acs_bandwidth_package"
 	request.MetricName = metricName
+	request.Dimensions = fmt.Sprintf(`[{"instanceId": "%s"}]`, cbp.ID)
 	request.StartTime = strconv.FormatInt(startTime, 10)
 	log.Info().Msgf("request.StartTime: %s", request.StartTime)
 	request.EndTime = strconv.FormatInt(now.Unix()*1000, 10)
@@ -77,28 +84,18 @@ func getAvgDatapoints(dataPoints []model.Datapoint) (*model.Datapoint, error) {
 	return result, nil
 }
 
-// GetAvgRxRate 流入带宽
-func (sdk *AliyunSDK) GetAvgRxRate(frequency string) (*model.Datapoint, error) {
-	duration, err := time.ParseDuration(frequency)
-	log.Info().Msgf("duration: %s", duration.String())
-	if err != nil {
-		return nil, err
-	}
-	dataPoints, err := sdk.DescribeMetricList("net_rx.rate", duration)
+// GetAvgRxRate 共享带宽 流入带宽
+func (sdk *AliyunSDK) GetAvgRxRate(cbp *model.CommonBandwidthPackage) (*model.Datapoint, error) {
+	dataPoints, err := sdk.DescribeMetricList("net_rx.rate", cbp)
 	if err != nil {
 		return nil, err
 	}
 	return getAvgDatapoints(dataPoints)
 }
 
-// GetAvgTxRate 流出带宽
-func (sdk *AliyunSDK) GetAvgTxRate(frequency string) (*model.Datapoint, error) {
-	duration, err := time.ParseDuration(frequency)
-	log.Info().Msgf("duration: %s", duration.String())
-	if err != nil {
-		return nil, err
-	}
-	dataPoints, err := sdk.DescribeMetricList("net_tx.rate", duration)
+// GetAvgTxRate 共享带宽 流出带宽
+func (sdk *AliyunSDK) GetAvgTxRate(cbp *model.CommonBandwidthPackage) (*model.Datapoint, error) {
+	dataPoints, err := sdk.DescribeMetricList("net_tx.rate", cbp)
 	if err != nil {
 		return nil, err
 	}

@@ -29,7 +29,7 @@
 
 ## example
 
-例子使用了
+例子使用了 kubernetes 的 
 
 
 ## usage
