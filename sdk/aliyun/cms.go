@@ -63,6 +63,7 @@ func (sdk *AliyunSDK) DescribeMetricList(metricName string, cbp *model.CommonBan
 	return
 }
 
+// getAvgDatapoints warning:此函数将会把带宽从bps换算成Mbps
 func getAvgDatapoints(dataPoints []model.Datapoint) (*model.Datapoint, error) {
 	dataPointsLen := len(dataPoints)
 	log.Info().Msgf("dataPointsLen:%v", dataPointsLen)
@@ -84,7 +85,7 @@ func getAvgDatapoints(dataPoints []model.Datapoint) (*model.Datapoint, error) {
 	return result, nil
 }
 
-// GetAvgRxRate 共享带宽 流入带宽
+// GetAvgRxRate 获得共享带宽的平均流入带宽,单位是Mbps
 func (sdk *AliyunSDK) GetAvgRxRate(cbp *model.CommonBandwidthPackage) (*model.Datapoint, error) {
 	dataPoints, err := sdk.DescribeMetricList("net_rx.rate", cbp)
 	if err != nil {
@@ -93,7 +94,7 @@ func (sdk *AliyunSDK) GetAvgRxRate(cbp *model.CommonBandwidthPackage) (*model.Da
 	return getAvgDatapoints(dataPoints)
 }
 
-// GetAvgTxRate 共享带宽 流出带宽
+// GetAvgTxRate 获得共享带宽平均流出带宽,单位是Mbps
 func (sdk *AliyunSDK) GetAvgTxRate(cbp *model.CommonBandwidthPackage) (*model.Datapoint, error) {
 	dataPoints, err := sdk.DescribeMetricList("net_tx.rate", cbp)
 	if err != nil {

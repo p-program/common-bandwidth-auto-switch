@@ -5,6 +5,7 @@ import (
 	"math"
 	"sync"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/rs/zerolog/log"
 	"github.com/zeusro/common-bandwidth-auto-switch/model"
 	"github.com/zeusro/common-bandwidth-auto-switch/sdk/aliyun"
@@ -13,7 +14,7 @@ import (
 // Manager 控制终端
 type Manager struct {
 	// sdk *model.AliyunConfig
-	sdk aliyun.AliyunSDK
+	sdk *aliyun.AliyunSDK
 	cbp *model.CommonBandwidthPackage
 }
 
@@ -55,7 +56,7 @@ func (m *Manager) Run() {
 	if len(errs) > 0 {
 		log.Debug().Errs("goroutine get rate err", []error{err1, err2})
 	}
-	// 当前共享带宽最大带宽速率
+	// 当前共享带宽最大带宽速率,单位是Mbps
 	currentMaxBandwidthRate := math.Max(rxDataPoint.Value, txDataPoint.Value)
 	if currentMaxBandwidthRate > float64(cbpInfo.MaxBandwidth) {
 		m.ScaleDown(currentMaxBandwidthRate)
@@ -66,10 +67,6 @@ func (m *Manager) Run() {
 		return
 	}
 	//无需扩容,也无需缩容
-}
-
-func pickSomeEIP() {
-
 }
 
 // ScaleUp 扩容:将低带宽EIP加入共享带宽
@@ -90,9 +87,9 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 		return errors.New("len(eipList) == 0")
 	}
 	// maxBandwidth := cbpInfo.MaxBandwidth
-	// var targetRemovedEips []vpc.PublicIpAddresse
+	var targetRemovedEips []vpc.PublicIpAddresse
 
-	//为了尽可能地减少 goroutine 创建,防止阿里云API限流,这里使用串行查询,当带宽满足要求时即可退出查询
+	// 获取所有EIP监控,再进行动态优化
 
 	// var wg sync.WaitGroup
 	// wg.Add()

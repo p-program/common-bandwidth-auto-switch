@@ -8,12 +8,12 @@ import (
 )
 
 func TestBuild(t *testing.T) {
-	new := prepareSimplePublicIpAddressInfoArray()
+	new := prepareEipAvgBandwidthInfoArray()
 	t.Logf("new: %v", new)
 	assert.Equal(t, len(new), 3)
 }
 
-func prepareSimplePublicIpAddressInfoArray() SimplePublicIpAddressInfos {
+func prepareEipAvgBandwidthInfoArray() EipAvgBandwidthInfos {
 	old := []vpc.PublicIpAddresse{
 		vpc.PublicIpAddresse{
 			IpAddress:    "1.1.1.1",
@@ -28,18 +28,18 @@ func prepareSimplePublicIpAddressInfoArray() SimplePublicIpAddressInfos {
 			AllocationId: "b",
 		},
 	}
-	entity1 := NewSimplePublicIpAddressInfoBuilder().
+	entity1 := NewEipAvgBandwidthInfoBuilder().
 		AddPublicIpAddresse(&old[0]).
 		AddValue(0).
 		Build()
-	entity2 := NewSimplePublicIpAddressInfoBuilder().
+	entity2 := NewEipAvgBandwidthInfoBuilder().
 		AddPublicIpAddresse(&old[1]).
 		AddValue(1).
 		Build()
-	entity3 := NewSimplePublicIpAddressInfoBuilder().
+	entity3 := NewEipAvgBandwidthInfoBuilder().
 		AddPublicIpAddresse(&old[2]).
 		AddValue(-1).
 		Build()
-	new := SimplePublicIpAddressInfos{*entity1, *entity2, *entity3}
+	new := EipAvgBandwidthInfos{*entity1, *entity2, *entity3}
 	return new
 }
