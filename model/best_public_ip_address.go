@@ -25,7 +25,7 @@ type BestPublicIpAddress struct {
 
 const (
 	X = 10
-	// Y 最大支持200条EIP检测数据
+	// Y 最大EIP检测数据
 	Y = 200
 	// DEFAULT_OFFSET=10
 )
@@ -48,6 +48,7 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos []EipAvgBandwidthIn
 
 func (m *BestPublicIpAddress) FindBestPublicIpAddress() []EipAvgBandwidthInfo {
 	m.dynamic()
+	m.findBack()
 	return m.FindBestPublicIpAddress()
 }
 
@@ -58,6 +59,7 @@ func (m *BestPublicIpAddress) FindLowestPublicIpAddress() []EipAvgBandwidthInfo 
 }
 
 func (m *BestPublicIpAddress) dynamic() {
+	//FIXME
 	listLen := len(m.origin)
 	// 初始化动态规划网格
 	for y := 1; y < listLen; y++ {
@@ -68,11 +70,11 @@ func (m *BestPublicIpAddress) dynamic() {
 	for y := 0; y < listLen; y++ {
 		fmt.Printf("%v \n", m.cellsMesh[y])
 	}
-
 }
 
 // 局部最优解
 func (m *BestPublicIpAddress) maxValue(y, x int) float64 {
+	//FIXME
 	// 当前商品无法放入背包，返回当前背包所能容纳的最大价值
 	currentMaxBandwidth := float64(x + m.minBandwidth)
 	if m.origin[y].Value > currentMaxBandwidth {
@@ -91,6 +93,7 @@ func (m *BestPublicIpAddress) maxValue(y, x int) float64 {
 
 // 回溯选择的商品方法
 func (m *BestPublicIpAddress) findBack() []EipAvgBandwidthInfo {
+	//FIXME
 	col := X - 1
 	for i := Y - 1; i > 0; i-- {
 		if m.cellsMesh[i][col] > m.cellsMesh[i-1][col] {
