@@ -3,8 +3,11 @@ package aliyun
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/rs/zerolog/log"
 )
@@ -60,6 +63,7 @@ func (sdk *AliyunSDK) AddCommonBandwidthPackageIp(bandwidthPackageId string, ipI
 }
 
 // RemoveCommonBandwidthPackageIp 调用RemoveCommonBandwidthPackageIp接口移除共享带宽实例中的EIP。
+// https://help.aliyun.com/document_detail/55995.html
 func (sdk *AliyunSDK) RemoveCommonBandwidthPackageIp(bandwidthPackageId string, ipInstanceId string) bool {
 	client := sdk.GetVPCClient()
 	request := vpc.CreateRemoveCommonBandwidthPackageIpRequest()
@@ -75,8 +79,52 @@ func (sdk *AliyunSDK) RemoveCommonBandwidthPackageIp(bandwidthPackageId string, 
 	return response.IsSuccess()
 }
 
+// RemoveCommonBandwidthPackageIps 复用 VPC client ，并行删除EIP
+func (sdk *AliyunSDK) RemoveCommonBandwidthPackageIps(bandwidthPackageId string, ipInstanceIds []string) {
+	client := sdk.GetVPCClient()
+	request := vpc.CreateRemoveCommonBandwidthPackageIpRequest()
+	request.Scheme = "https"
+	request.RegionId = sdk.config.Region
+	request.BandwidthPackageId = bandwidthPackageId
+	var wg sync.WaitGroup
+	for _, ipInstanceID := range ipInstanceIds {
+		//这里传复制，防止出错
+		go func(r vpc.RemoveCommonBandwidthPackageIpRequest, eipID string, w *sync.WaitGroup) {
+			wg.Add(1)
+			//无论失败与否都解除占用
+			defer wg.Done()
+			r.IpInstanceId = eipID
+			_, err := client.RemoveCommonBandwidthPackageIp(request)
+			if err != nil {
+				log.Err(err)
+			}
+
+		}(*request, ipInstanceID, &wg)
+	}
+	wg.Wait()
+}
+
+// DescribeEipAvgMonitorData 获取 EIP 监控信息流入和流出的带宽总和平均值
+// avgBandwidth 单位是 Mbps
+func (sdk *AliyunSDK) DescribeEipAvgMonitorData(allocationId string, checkFrequency string) (avgBandwidth float64, err error) {
+	datas, err := sdk.DescribeEipMonitorData(allocationId, checkFrequency)
+	if err != nil {
+		log.Err(err)
+		return 0, err
+	}
+	var sum float64 = 0
+	for _, data := range datas {
+		// EipBandwidth 带宽值，该值等于EipFlow/60，单位为B/S
+		sum += float64(data.EipBandwidth)
+	}
+	// 1 Mbps = 131072 B/S
+	avgBandwidth = sum / float64(len(datas)*131072)
+	return avgBandwidth, nil
+}
+
 // DescribeEipMonitorData 调用DescribeEipMonitorData接口查看EIP的监控信息。
 // https://help.aliyun.com/document_detail/36060.html
+// allocationId EIP的实例ID。
 func (sdk *AliyunSDK) DescribeEipMonitorData(allocationId string, checkFrequency string) ([]vpc.EipMonitorData, error) {
 	client := sdk.GetVPCClient()
 	request := vpc.CreateDescribeEipMonitorDataRequest()
@@ -101,4 +149,31 @@ func (sdk *AliyunSDK) DescribeEipMonitorData(allocationId string, checkFrequency
 		err = errors.New(response.BaseResponse.String())
 	}
 	return response.EipMonitorDatas.EipMonitorData, nil
+}
+
+// DescribeInuseEipAddresses 获取当前 region 所有在用 EIP
+func (sdk *AliyunSDK) DescribeInuseEipAddresses() ([]vpc.EipAddress, error) {
+	client := sdk.GetVPCClient()
+	request := vpc.CreateDescribeEipAddressesRequest()
+	request.RegionId = sdk.config.Region
+	request.Scheme = "https"
+	request.Status = "InUse"
+	request.PageSize = requests.NewInteger(100)
+	response, err := client.DescribeEipAddresses(request)
+	return response.EipAddresses.EipAddress, err
+}
+
+// GetCurrentEipAddressesExceptCBWP 获取未绑定共享带宽的EIP列表
+// cbwpID 共享带宽ID
+func (sdk *AliyunSDK) GetCurrentEipAddressesExceptCBWP(cbwpID string) (finalList []vpc.EipAddress, err error) {
+	list, err := sdk.DescribeInuseEipAddresses()
+	if err != nil {
+		return
+	}
+	for _, item := range list {
+		if !strings.EqualFold(cbwpID, item.BandwidthPackageId) {
+			finalList = append(finalList, item)
+		}
+	}
+	return finalList, nil
 }

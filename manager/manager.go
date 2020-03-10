@@ -59,10 +59,12 @@ func (m *Manager) Run() {
 	// 当前共享带宽最大带宽速率,单位是Mbps
 	currentMaxBandwidthRate := math.Max(rxDataPoint.Value, txDataPoint.Value)
 	if currentMaxBandwidthRate > float64(cbpInfo.MaxBandwidth) {
+		//带宽高峰，需要缩容
 		m.ScaleDown(currentMaxBandwidthRate)
 		return
 	}
 	if currentMaxBandwidthRate < float64(cbpInfo.MinBandwidth) {
+		//带宽低谷，需要扩容
 		m.ScaleUp(currentMaxBandwidthRate)
 		return
 	}
@@ -70,13 +72,45 @@ func (m *Manager) Run() {
 }
 
 // ScaleUp 扩容:将低带宽EIP加入共享带宽
-func (m *Manager) ScaleUp(currentBandwidthRate float64) {
-
+func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
+	cbpInfo := m.cbp
+	cbwpID := cbpInfo.ID
+	//获取当前 region 下未绑定共享带宽的IP列表
+	currentUnbindEIPs, err := m.sdk.GetCurrentEipAddressesExceptCBWP(cbwpID)
+	if err != nil {
+		return err
+	}
+	var eipWaitLock sync.WaitGroup
+	checkFrequency := cbpInfo.CheckFrequency
+	eipWaitLock.Add(len(currentUnbindEIPs))
+	var eipAvgList []model.EipAvgBandwidthInfo
+	for _, eipInfo := range currentUnbindEIPs {
+		go func(eip *vpc.EipAddress, wg *sync.WaitGroup) {
+			defer wg.Done()
+			avgBandwidth, err := m.sdk.DescribeEipAvgMonitorData(eip.AllocationId, checkFrequency)
+			//FIXME: 局部失败要怎么处理
+			if err != nil {
+				log.Err(err)
+				return
+			}
+			eipAvgList = append(eipAvgList, model.EipAvgBandwidthInfo{
+				IpAddress:    eip.IpAddress,
+				AllocationId: eip.AllocationId,
+				Value:        avgBandwidth,
+			})
+		}(&eipInfo, &eipWaitLock)
+	}
+	//根据剩余带宽动态规划
+	bestPublicIpAddress, err := model.NewBestPublicIpAddress(m.cbp.MinBandwidth, eipAvgList)
+	if err != nil {
+		return err
+	}
+	//TODO
+	return nil
 }
 
 //ScaleDown 缩容:将高带宽EIP移除共享带宽
 func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
-
 	cbpInfo := m.cbp
 	// 获取当前共享带宽内EIP列表
 	eipList, err := m.sdk.DescribeCommonBandwidthPackages(cbpInfo.ID)
@@ -86,16 +120,37 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 	if len(eipList) == 0 {
 		return errors.New("len(eipList) == 0")
 	}
-	// maxBandwidth := cbpInfo.MaxBandwidth
-	var targetRemovedEips []vpc.PublicIpAddresse
-
-	// 获取所有EIP监控,再进行动态优化
-
-	// var wg sync.WaitGroup
-	// wg.Add()
-	// for _, v := range eipList {
-
-	// }
-	//选取高带宽的EIP,然后将他们移除
-
+	//获取所有EIP监控
+	var eipWaitLock sync.WaitGroup
+	eipWaitLock.Add(len(eipList))
+	checkFrequency := cbpInfo.CheckFrequency
+	var eipAvgList []model.EipAvgBandwidthInfo
+	for _, eipInfo := range eipList {
+		go func(eip *vpc.PublicIpAddresse, wg *sync.WaitGroup) {
+			defer wg.Done()
+			avgBandwidth, err := m.sdk.DescribeEipAvgMonitorData(eip.AllocationId, checkFrequency)
+			//FIXME: 局部失败要怎么处理
+			if err != nil {
+				log.Err(err)
+				return
+			}
+			eipAvgList = append(eipAvgList, model.EipAvgBandwidthInfo{
+				IpAddress:    eip.IpAddress,
+				AllocationId: eip.AllocationId,
+				Value:        avgBandwidth,
+			})
+		}(&eipInfo, &eipWaitLock)
+	}
+	bestPublicIpAddress, err := model.NewBestPublicIpAddress(m.cbp.MinBandwidth, eipAvgList)
+	if err != nil {
+		return err
+	}
+	//进行动态优化
+	lowestEIPs := bestPublicIpAddress.FindLowestPublicIpAddress()
+	var ipInstanceIds []string
+	for _, eIP := range lowestEIPs {
+		ipInstanceIds = append(ipInstanceIds, eIP.AllocationId)
+	}
+	m.sdk.RemoveCommonBandwidthPackageIps(m.cbp.ID, ipInstanceIds)
+	return nil
 }

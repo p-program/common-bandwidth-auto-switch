@@ -35,6 +35,10 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos []EipAvgBandwidthIn
 		err := errors.New("超过了可解范围")
 		return nil, err
 	}
+	if len(bandwidthInfos) < 1 {
+		err := errors.New("别来捣乱，OK?")
+		return nil, err
+	}
 	bestIPs := &BestPublicIpAddress{
 		minBandwidth: minBandwidth,
 		origin:       bandwidthInfos,
@@ -45,6 +49,12 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos []EipAvgBandwidthIn
 func (m *BestPublicIpAddress) FindBestPublicIpAddress() []EipAvgBandwidthInfo {
 	m.dynamic()
 	return m.FindBestPublicIpAddress()
+}
+
+// FindLowestPublicIpAddress 求FindBestPublicIpAddress的差集
+func (m *BestPublicIpAddress) FindLowestPublicIpAddress() []EipAvgBandwidthInfo {
+	// TODO
+	return m.FindLowestPublicIpAddress()
 }
 
 func (m *BestPublicIpAddress) dynamic() {
