@@ -8,7 +8,7 @@ import (
 func TestSort(t *testing.T) {
 	array := prepareEipAvgBandwidthInfoArray()
 	sort.Sort(array)
-	//结果为降序,带宽高的显示靠前
+	//结果为按带宽升序
 	t.Logf("sorted array: %v", array)
 }
 

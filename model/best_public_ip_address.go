@@ -3,8 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
-
-	"github.com/rs/zerolog/log"
+	"sort"
 )
 
 // BestPublicIpAddress 应用动态规划,寻求最佳EIP列表
@@ -25,12 +24,12 @@ type BestPublicIpAddress struct {
 
 const (
 	// COL 一维边界
-	COL = 10
+	COL = 11
 	// MAX_EIP 二维边界，最大EIP检测数据，尽量不要用这个初始化
 	MAX_EIP = 102
 )
 
-func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos []EipAvgBandwidthInfo) (*BestPublicIpAddress, error) {
+func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos EipAvgBandwidthInfos) (*BestPublicIpAddress, error) {
 	eipsLen := len(bandwidthInfos)
 	if eipsLen > MAX_EIP {
 		err := errors.New("IP列表超过了可解范围")
@@ -41,12 +40,14 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos []EipAvgBandwidthIn
 		return nil, err
 	}
 	// 初始化动态规划网格
-	var cells [MAX_EIP][COL]float64
+	cells := [MAX_EIP][COL]float64{}
 	initBandwidth := float64(minBandwidth)
 	for j := 1; j < COL; j++ {
 		cells[0][j] = float64(initBandwidth)
 		initBandwidth++
 	}
+	sort.Sort(bandwidthInfos)
+	// fmt.Printf("len(cells): %v ;cap(cells): %v \n", len(cells[1]), cap(cells[1]))
 	for i, v := range bandwidthInfos {
 		//从第二行开始赋值
 		cells[i+1][0] = float64(v.Value)
@@ -58,6 +59,7 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos []EipAvgBandwidthIn
 		eipsLen:      eipsLen,
 		cellsMesh:    cells,
 	}
+	// fmt.Printf("len(cells): %v ;cap(cells): %v \n", len(bestIPs.cellsMesh[1]), cap(bestIPs.cellsMesh[1]))
 	return bestIPs, nil
 }
 
@@ -69,41 +71,59 @@ func (m *BestPublicIpAddress) FindBest() []EipAvgBandwidthInfo {
 }
 
 func (m *BestPublicIpAddress) dynamic() {
-	for i := 1; i < COL; i++ {
-		for j := 1; j < m.eipsLen; j++ {
-			log.Info().Msgf("i: %v ;j: %v", i, j)
+	for i := 1; i <= m.eipsLen; i++ {
+		for j := 1; j < COL; j++ {
 			m.cellsMesh[i][j] = m.maxValue(i, j)
+			// fmt.Printf("m.cellsMesh[%v][%v]: %v \n", i, j, m.cellsMesh[i][j])
 		}
 	}
+}
+func (m *BestPublicIpAddress) print() {
 	for j := 0; j <= m.eipsLen; j++ {
-		fmt.Printf("%v \n", m.cellsMesh[j])
+		for _, v := range m.cellsMesh[j] {
+			content := ""
+			if v < float64(10) {
+				content = "0"
+			}
+			// content = fmt.Sprintf("%s%v", content, v)
+			fmt.Printf("%s%v ", content, v)
+			// fmt.Printf("%v \n", m.cellsMesh[j])
+		}
+		fmt.Print("\n")
 	}
 }
 
-// 局部最优解
+// 局部最优解,只是近似最优解，不是最优解
 func (m *BestPublicIpAddress) maxValue(i, j int) float64 {
-	// j 是带宽值
 	lastColumnCell := m.cellsMesh[i-1][j]
-	currentEIPBandwidth := m.origin[j].Value
+	currentEIPBandwidth := m.origin[i-1].Value
+	bandwidthLimit := m.cellsMesh[0][j]
+	// fmt.Printf("i: %v ; j: %v ;currentEIPBandwidth: %v ;bandwidthLimit: %v ;", i, j, currentEIPBandwidth, bandwidthLimit)
 	// 当前EIP超过带宽限制
-	if currentEIPBandwidth > float64(j) {
+	if currentEIPBandwidth > bandwidthLimit {
 		return lastColumnCell
+	}
+	if i == 1 {
+		// 第2列要先特殊处理
+		return currentEIPBandwidth
 	}
 	// 剩余带宽=当前带宽上限-当前EIP的带宽
 	// 剩余带宽足够容纳当前EIP+之前的IP
-	remainingBandwidth := m.cellsMesh[0][j] - currentEIPBandwidth
-	//从上一行中找到最符合需求的EIP
+	remainingBandwidth := bandwidthLimit - currentEIPBandwidth
 	currentCellBandwidth := currentEIPBandwidth
-	//倒序遍历，最大值计入当前网格
-	for k := len(m.cellsMesh[i-1]) - 1; k >= 0; k-- {
+	hasRemain := false
+	//FIXME:从先前的元素中排列组合，求满足条件的最大值
+	for k := COL - 1; k >= 0; k-- {
 		//剩余带宽刚好能融入上一行的EIP的带宽
-		if remainingBandwidth > m.cellsMesh[i-1][k] {
+		if remainingBandwidth >= m.cellsMesh[i-1][k] {
 			currentCellBandwidth += m.cellsMesh[i-1][k]
-			break
+			hasRemain = true
+			return currentCellBandwidth
 		}
 	}
-	if currentCellBandwidth >= lastColumnCell {
-		return currentCellBandwidth
+	// 剩余带宽不够支持
+	if !hasRemain {
+		return lastColumnCell
 	}
-	return lastColumnCell
+	return currentEIPBandwidth
 }

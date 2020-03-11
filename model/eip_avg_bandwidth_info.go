@@ -15,9 +15,9 @@ type EipAvgBandwidthInfos []EipAvgBandwidthInfo
 // 获取此 slice 的长度
 func (list EipAvgBandwidthInfos) Len() int { return len(list) }
 
-// 根据带宽降序排序 （此处按照自己的业务逻辑写）
+// 根据带宽升序排序 （此处按照自己的业务逻辑写）
 func (list EipAvgBandwidthInfos) Less(i, j int) bool {
-	return list[i].Value > list[j].Value
+	return list[j].Value > list[i].Value
 }
 
 // 交换数据
