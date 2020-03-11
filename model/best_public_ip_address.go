@@ -3,6 +3,8 @@ package model
 import (
 	"errors"
 	"fmt"
+
+	"github.com/rs/zerolog/log"
 )
 
 // BestPublicIpAddress 应用动态规划,寻求最佳EIP列表
@@ -10,97 +12,98 @@ import (
 type BestPublicIpAddress struct {
 	// 原始EIP检测数据
 	origin []EipAvgBandwidthInfo
-
 	//best 最佳EIP池
 	best []EipAvgBandwidthInfo
 	//minBandwidth 最小带宽
 	minBandwidth int
-	// 带宽偏移量,默认值10
-	// offset int
-	//动态规划网格，网格的元素为当前局部带宽最优解
-	cellsMesh [Y][X]float64
-	// 带宽(类似于背包问题的物品容量)
-	bandwidths []float64
+	maxBandwidth int
+	// cellsMesh 动态规划网格，网格的元素为当前局部带宽最优解（ XX Mbps）,由于 golang 不支持动态数组，这里只能初始化一个稍微大一点的数值
+	cellsMesh [MAX_EIP][COL]float64
+	//eipsLen 由于 golang 不支持动态数组,这里要确定二维边界
+	eipsLen int
 }
 
 const (
-	X = 10
-	// Y 最大EIP检测数据
-	Y = 200
-	// DEFAULT_OFFSET=10
+	// COL 一维边界
+	COL = 10
+	// MAX_EIP 二维边界，最大EIP检测数据，尽量不要用这个初始化
+	MAX_EIP = 102
 )
 
 func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos []EipAvgBandwidthInfo) (*BestPublicIpAddress, error) {
-	if len(bandwidthInfos) > Y {
-		err := errors.New("超过了可解范围")
+	eipsLen := len(bandwidthInfos)
+	if eipsLen > MAX_EIP {
+		err := errors.New("IP列表超过了可解范围")
 		return nil, err
 	}
-	if len(bandwidthInfos) < 1 {
+	if eipsLen < 1 {
 		err := errors.New("别来捣乱，OK?")
 		return nil, err
 	}
+	// 初始化动态规划网格
+	var cells [MAX_EIP][COL]float64
+	initBandwidth := float64(minBandwidth)
+	for j := 1; j < COL; j++ {
+		cells[0][j] = float64(initBandwidth)
+		initBandwidth++
+	}
+	for i, v := range bandwidthInfos {
+		//从第二行开始赋值
+		cells[i+1][0] = float64(v.Value)
+	}
 	bestIPs := &BestPublicIpAddress{
 		minBandwidth: minBandwidth,
+		maxBandwidth: minBandwidth + COL,
 		origin:       bandwidthInfos,
+		eipsLen:      eipsLen,
+		cellsMesh:    cells,
 	}
 	return bestIPs, nil
 }
 
-func (m *BestPublicIpAddress) FindBestPublicIpAddress() []EipAvgBandwidthInfo {
+// FindBest 回溯选择,从最后一行最后一格开始推移
+func (m *BestPublicIpAddress) FindBest() []EipAvgBandwidthInfo {
 	m.dynamic()
-	m.findBack()
-	return m.FindBestPublicIpAddress()
-}
-
-// FindLowestPublicIpAddress 求FindBestPublicIpAddress的差集
-func (m *BestPublicIpAddress) FindLowestPublicIpAddress() []EipAvgBandwidthInfo {
-	// TODO
-	return m.FindLowestPublicIpAddress()
+	//TODO
+	return m.best
 }
 
 func (m *BestPublicIpAddress) dynamic() {
-	//FIXME
-	listLen := len(m.origin)
-	// 初始化动态规划网格
-	for y := 1; y < listLen; y++ {
-		for x := 1; x < X; x++ {
-			m.cellsMesh[y][x] = m.maxValue(y, x)
+	for i := 1; i < COL; i++ {
+		for j := 1; j < m.eipsLen; j++ {
+			log.Info().Msgf("i: %v ;j: %v", i, j)
+			m.cellsMesh[i][j] = m.maxValue(i, j)
 		}
 	}
-	for y := 0; y < listLen; y++ {
-		fmt.Printf("%v \n", m.cellsMesh[y])
+	for j := 0; j <= m.eipsLen; j++ {
+		fmt.Printf("%v \n", m.cellsMesh[j])
 	}
 }
 
 // 局部最优解
-func (m *BestPublicIpAddress) maxValue(y, x int) float64 {
-	//FIXME
-	// 当前商品无法放入背包，返回当前背包所能容纳的最大价值
-	currentMaxBandwidth := float64(x + m.minBandwidth)
-	if m.origin[y].Value > currentMaxBandwidth {
-		return m.cellsMesh[y-1][x]
+func (m *BestPublicIpAddress) maxValue(i, j int) float64 {
+	// j 是带宽值
+	lastColumnCell := m.cellsMesh[i-1][j]
+	currentEIPBandwidth := m.origin[j].Value
+	// 当前EIP超过带宽限制
+	if currentEIPBandwidth > float64(j) {
+		return lastColumnCell
 	}
-	// 可放进背包时候，计算放入当前商品后的最大价值
-	// 每一个EIP的价值都是1
-	// 当前价值= EIP价值 + 剩余空间的价值
-	// 剩余空间的价值=cell[i-1][j-当前商品的重量])
-	currentValue := 1 + m.cellsMesh[y-1][x-1]
-	if currentValue >= m.cellsMesh[y-1][x] {
-		return currentValue
-	}
-	return m.cellsMesh[y-1][x]
-}
-
-// 回溯选择的商品方法
-func (m *BestPublicIpAddress) findBack() []EipAvgBandwidthInfo {
-	//FIXME
-	col := X - 1
-	for i := Y - 1; i > 0; i-- {
-		if m.cellsMesh[i][col] > m.cellsMesh[i-1][col] {
-			// selected[i] = 1
-			m.best = append(m.best, m.origin[i])
-			col = col - 1
+	// 剩余带宽=当前带宽上限-当前EIP的带宽
+	// 剩余带宽足够容纳当前EIP+之前的IP
+	remainingBandwidth := m.cellsMesh[0][j] - currentEIPBandwidth
+	//从上一行中找到最符合需求的EIP
+	currentCellBandwidth := currentEIPBandwidth
+	//倒序遍历，最大值计入当前网格
+	for k := len(m.cellsMesh[i-1]) - 1; k >= 0; k-- {
+		//剩余带宽刚好能融入上一行的EIP的带宽
+		if remainingBandwidth > m.cellsMesh[i-1][k] {
+			currentCellBandwidth += m.cellsMesh[i-1][k]
+			break
 		}
 	}
-	return m.best
+	if currentCellBandwidth >= lastColumnCell {
+		return currentCellBandwidth
+	}
+	return lastColumnCell
 }
