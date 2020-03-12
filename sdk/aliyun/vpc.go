@@ -177,3 +177,17 @@ func (sdk *AliyunSDK) GetCurrentEipAddressesExceptCBWP(cbwpID string) (finalList
 	}
 	return finalList, nil
 }
+
+// GetCurrentEipAddressesInCBWP 获取绑定当前共享带宽的IP
+func (sdk *AliyunSDK) GetCurrentEipAddressesInCBWP(cbwpID string) (finalList []vpc.EipAddress, err error) {
+	list, err := sdk.DescribeInuseEipAddresses()
+	if err != nil {
+		return
+	}
+	for _, item := range list {
+		if strings.EqualFold(cbwpID, item.BandwidthPackageId) {
+			finalList = append(finalList, item)
+		}
+	}
+	return finalList, nil
+}

@@ -13,7 +13,6 @@ import (
 	"github.com/zeusro/common-bandwidth-auto-switch/util"
 )
 
-
 const (
 	ADD_EIP_TEMPLATE    = "添加EIP: %s ;EIPID: %s"
 	REMOVE_EIP_TEMPLATE = "删除EIP: %s ;EIPID: %s"
@@ -122,15 +121,19 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 		return err
 	}
 	// 动态优化求最优IP
-	bestEIPs := bestPublicIpAddress.FindBestPublicIpAddress()
-	m.ding(bestEIPs，ADD_EIP_TEMPLATE)
+	bestEIPs := bestPublicIpAddress.FindBestWithoutBrain()
+	if len(bestEIPs) < 1 {
+		return nil
+	}
+	m.ding(bestEIPs, ADD_EIP_TEMPLATE)
 	// TODO: 周密测试后再取消注释
 	// for _, eipInfo := range bestEIPs {
 	// 	m.sdk.AddCommonBandwidthPackageIp(cbpInfo.ID, eipInfo.AllocationId)
 	// }
 	return nil
 }
-func (m *Manager) ding(ips []model.EipAvgBandwidthInfo,notifyTemplate string) {
+
+func (m *Manager) ding(ips []model.EipAvgBandwidthInfo, notifyTemplate string) {
 	cbwpID := m.cbp.ID
 	if token := m.dingtalkNotifyToken; len(token) > 0 {
 		ding := util.NewDingTalk(token)
@@ -142,7 +145,6 @@ func (m *Manager) ding(ips []model.EipAvgBandwidthInfo,notifyTemplate string) {
 		title := fmt.Sprintf("共享带宽动态优化(%s)", cbwpID)
 		ding.DingMarkdown(title, markdownBuilder.BuilderText())
 	}
-
 }
 
 //ScaleDown 缩容:将高带宽EIP移除共享带宽
@@ -182,13 +184,41 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 		return err
 	}
 	//进行动态优化
-	lowestEIPs := bestPublicIpAddress.FindLowestPublicIpAddress()
-	m.ding(bestEIPs，REMOVE_EIP_TEMPLATE)
+	bestIPs := bestPublicIpAddress.FindBestWithoutBrain()
+	if len(bestIPs) < 1 {
+		return nil
+	}
+	currentEIPsInCBWP, err := m.sdk.GetCurrentEipAddressesInCBWP(cbpInfo.ID)
+	if err != nil {
+		return err
+	}
+	var lowestEIPs []model.EipAvgBandwidthInfo
+	var lowestEIPsAddress []string
+	//求差集. currentEIPsInCBWP - bestIPs
+	for i1 := 0; i1 < len(bestIPs); i1++ {
+		bestIP := bestIPs[i1]
+		isCross := false
+		var ip vpc.EipAddress
+		for i2 := 0; i2 < len(currentEIPsInCBWP); i2++ {
+			ip = currentEIPsInCBWP[i2]
+			if bestIP.AllocationId == ip.AllocationId {
+				isCross = true
+				break
+			}
+		}
+		//没交集,可加
+		if !isCross {
+			entity := model.EipAvgBandwidthInfo{
+				IpAddress:    ip.IpAddress,
+				AllocationId: ip.AllocationId,
+			}
+			lowestEIPs = append(lowestEIPs, entity)
+			lowestEIPsAddress = append(lowestEIPsAddress, ip.AllocationId)
+		}
+	}
+	m.ding(lowestEIPs, REMOVE_EIP_TEMPLATE)
+
 	// TODO: 周密测试后再取消注释
-	// var ipInstanceIds []string
-	// for _, eIP := range lowestEIPs {
-	// 	ipInstanceIds = append(ipInstanceIds, eIP.AllocationId)
-	// }
-	// m.sdk.RemoveCommonBandwidthPackageIps(cbpInfo.ID, ipInstanceIds)
+	// m.sdk.RemoveCommonBandwidthPackageIps(cbpInfo.ID, lowestEIPsAddress)
 	return nil
 }

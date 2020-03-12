@@ -36,6 +36,18 @@ func TestDynamic2(t *testing.T) {
 	bestIPs.dynamic()
 }
 
+func TestFindBest(t *testing.T) {
+	bandwidthInfos := prepareEipAvgBandwidthInfos2()
+	bestIPs, err := NewBestPublicIpAddress(40, bandwidthInfos)
+	assert.Nil(t, err)
+	best := bestIPs.FindBest()
+	bestIPs.print()
+	t.Logf("len(best):%v", len(best))
+	for j := 0; j < len(best); j++ {
+		t.Logf("%v \n", best[j])
+	}
+}
+
 func prepareEipAvgBandwidthInfos1() []EipAvgBandwidthInfo {
 	bandwidthInfos := []EipAvgBandwidthInfo{
 		EipAvgBandwidthInfo{"1.1.1.1", "a", float64(20)},
