@@ -29,8 +29,7 @@
 
 ## example
 
-例子使用了 kubernetes 的 
-
+例子使用了 kubernetes 的 CronJob
 
 ## usage
 
@@ -42,3 +41,5 @@
 
 1. 阻塞,周期性运行,再加上健康检查
 1. 多实例运行
+1. DevOps
+1. document
