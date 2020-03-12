@@ -1,0 +1,9 @@
+commonBandwidthPackages:
+  - id: "cbwp-"
+    maxBandwidth: 60
+    minBandwidth: 40
+    checkFrequency: 1h
+aliyun:
+  region: "cn-shenzhen"
+  accessKeyId: ""
+  accessSecret: ""

@@ -25,15 +25,21 @@
 
 当前共享带宽 > 期望值时,自动把高带宽的EIP移除出共享带宽
 
-当前共享带宽 < 1/2期望值时,自动把高带宽的EIP添加入共享带宽
+当前共享带宽 < 期望值时,自动把高带宽的EIP添加入共享带宽
 
 ## example
 
-例子使用了 kubernetes 的 CronJob
+例子使用了 Kubernetes 的 CronJob
 
 ## usage
 
 ## warning
+
+用到的接口:
+
+cms: `DescribeMetricList`
+
+vpc: `DescribeCommonBandwidthPackages` , `AddCommonBandwidthPackageIp` , `RemoveCommonBandwidthPackageIp` `DescribeEipMonitorData` `DescribeEipAddresses` , `DescribeInuseEipAddresses`
 
 由于需要操作VPC和共享带宽，这类都属于**高危操作**，RAM授权记得弄好。
 

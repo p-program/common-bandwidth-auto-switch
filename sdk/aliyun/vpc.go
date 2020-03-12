@@ -152,6 +152,7 @@ func (sdk *AliyunSDK) DescribeEipMonitorData(allocationId string, checkFrequency
 }
 
 // DescribeInuseEipAddresses 获取当前 region 所有在用 EIP
+// https://help.aliyun.com/document_detail/36018.html
 func (sdk *AliyunSDK) DescribeInuseEipAddresses() ([]vpc.EipAddress, error) {
 	client := sdk.GetVPCClient()
 	request := vpc.CreateDescribeEipAddressesRequest()
