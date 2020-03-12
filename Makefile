@@ -5,5 +5,6 @@ auto_commit:
 	git commit -am "$(now)"
 	git push
 
-build:
+buildAndRun:
 	go build
+	./common-bandwidth-auto-switch

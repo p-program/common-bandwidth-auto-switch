@@ -48,14 +48,16 @@ func (m *Manager) Run() {
 	var err1, err2 error
 	go func(w *sync.WaitGroup) {
 		rxDataPoint, err1 = m.sdk.GetAvgRxRate(m.cbp)
+		currentRateWG.Done()
 	}(&currentRateWG)
 	go func(w *sync.WaitGroup) {
 		txDataPoint, err2 = m.sdk.GetAvgTxRate(m.cbp)
+		currentRateWG.Done()
 	}(&currentRateWG)
 	currentRateWG.Wait()
 	// 共享带宽信息
 	cbpInfo := m.cbp
-	log.Info().Msgf("当前共享带宽实例: %s ;平均流入带宽: %d ;平均流出带宽: %d ;",
+	log.Info().Msgf("当前共享带宽实例: %s ;平均流入带宽: %v ;平均流出带宽: %v ;",
 		cbpInfo.ID,
 		rxDataPoint.Value,
 		txDataPoint.Value)
@@ -83,6 +85,7 @@ func (m *Manager) Run() {
 	}
 	// 5 Mbps 以内就不优化了，没啥区别
 	//无需扩容,也无需缩容
+	log.Info().Msg("无需扩容,也无需缩容")
 }
 
 // ScaleUp 扩容:将低带宽EIP加入共享带宽
