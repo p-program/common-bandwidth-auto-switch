@@ -26,9 +26,13 @@ func main() {
 		}
 	}
 	aliyunSDKConfig := config.AliyunConfig
+	useDingTalkNotification := len(config.DingTalkConfig.NotificationToken) > 0
 	sdk := aliyun.NewAliyunSDK(&aliyunSDKConfig)
 	for _, cbp := range config.CommonBandwidthPackages {
 		manager := manager.NewManager(sdk, &cbp)
+		if useDingTalkNotification {
+			manager.UseDingTalkNotification(config.DingTalkConfig.NotificationToken)
+		}
 		manager.Run()
 	}
 

@@ -3,4 +3,4 @@ ADD . /src/github.com/zeusro/common-bandwidth-auto-switch
 WORKDIR /src/github.com/zeusro/common-bandwidth-auto-switch
 RUN apk update  && \
 	GOARCH=amd64 CGO_ENABLED=0 go build -o /common-bandwidth-auto-switch  github.com/zeusro/common-bandwidth-auto-switch
-ENTRYPOINT ["/common-bandwidth-auto-switch"]
+ENTRYPOINT ["/src/github.com/zeusro/common-bandwidth-auto-switch/common-bandwidth-auto-switch"]

@@ -25,8 +25,8 @@ spec:
             imagePullPolicy: IfNotPresent
             name: backup
             volumeMounts:
-            - mountPath: /
-              name: cbwp-config            
+            - mountPath: /src/github.com/zeusro/common-bandwidth-auto-switch
+              name: cbwp-config
             resources: {}
           dnsPolicy: ClusterFirst
           restartPolicy: Never

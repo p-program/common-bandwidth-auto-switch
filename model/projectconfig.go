@@ -10,8 +10,14 @@ import (
 type ProjectConfig struct {
 	CommonBandwidthPackages []CommonBandwidthPackage `yaml:"commonBandwidthPackages"`
 	AliyunConfig            AliyunConfig             `yaml:"aliyun"`
+	DingTalkConfig          DingTalkConfig           `yaml:dingTalk`
 	// for copy
 	// `yaml:""`
+}
+
+type DingTalkConfig struct {
+	// NotificationToken 通知机器人的token
+	NotificationToken string `yaml:"notificationToken"`
 }
 
 func NewProjectConfig() *ProjectConfig {

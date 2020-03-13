@@ -128,7 +128,10 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 	if len(bestEIPs) < 1 {
 		return nil
 	}
-	m.ding(bestEIPs, ADD_EIP_TEMPLATE)
+	if len(m.dingtalkNotifyToken) > 0 {
+		m.ding(bestEIPs, ADD_EIP_TEMPLATE)
+	}
+
 	// TODO: 周密测试后再取消注释
 	// for _, eipInfo := range bestEIPs {
 	// 	m.sdk.AddCommonBandwidthPackageIp(cbpInfo.ID, eipInfo.AllocationId)
@@ -219,8 +222,9 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 			lowestEIPsAddress = append(lowestEIPsAddress, ip.AllocationId)
 		}
 	}
-	m.ding(lowestEIPs, REMOVE_EIP_TEMPLATE)
-
+	if len(m.dingtalkNotifyToken) > 0 {
+		m.ding(lowestEIPs, REMOVE_EIP_TEMPLATE)
+	}
 	// TODO: 周密测试后再取消注释
 	// m.sdk.RemoveCommonBandwidthPackageIps(cbpInfo.ID, lowestEIPsAddress)
 	return nil
