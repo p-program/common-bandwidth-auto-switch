@@ -47,5 +47,3 @@ vpc: `DescribeCommonBandwidthPackages` , `AddCommonBandwidthPackageIp` , `Remove
 
 1. 阻塞,周期性运行,再加上健康检查
 1. 多实例运行
-1. DevOps
-1. document
