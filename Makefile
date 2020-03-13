@@ -20,3 +20,8 @@ mirror:
 	docker tag $(IMAGE) $(MIRROR_IMAGE)
 	docker push $(MIRROR_IMAGE)
 	docker push $(MIRROR_IMAGE)
+
+up:
+	docker-compose build --force-rm --no-cache --pull
+	docker-compose up
+
