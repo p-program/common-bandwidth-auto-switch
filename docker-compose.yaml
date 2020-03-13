@@ -7,3 +7,5 @@ services:
     restart: "no"
     volumes:    
     - ./config.yaml:/app/config.yaml
+  
+  

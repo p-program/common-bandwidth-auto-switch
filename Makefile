@@ -1,8 +1,8 @@
 now 		  := $(shell date)
 PREFIX		  ?= zeusro
-APP_NAME          ?= common-bandwidth-auto-switch:1.0
+APP_NAME      ?= common-bandwidth-auto-switch:latest
 IMAGE		  ?= $(PREFIX)/$(APP_NAME)
-MIRROR_IMAGE      ?= mirror/common-bandwidth-auto-switch:1.0
+MIRROR_IMAGE  ?= mirror/common-bandwidth-auto-switch:latest
 auto_commit:   
 	git add .
 	git commit -am "$(now)"

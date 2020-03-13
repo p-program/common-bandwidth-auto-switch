@@ -29,6 +29,13 @@
 
 ## usage
 
+### docker
+
+```bash
+docker run zeusro/common-bandwidth-auto-switch:latest
+```
+
+### kubernetes
 例子使用了 Kubernetes 的 `CronJob` + `secret` 的方式部署
 
 ```bash
