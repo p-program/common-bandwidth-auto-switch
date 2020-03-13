@@ -29,6 +29,8 @@
 
 ## usage
 
+参照 `config-example.yaml` 修改 `config.yaml` 配置文件.
+
 ### docker
 
 ```bash
@@ -36,6 +38,7 @@ docker run -it -v /root/common-bandwidth-auto-switch/config.yaml:/app/config.yam
 ```
 
 ### kubernetes
+
 例子使用了 Kubernetes 的 `CronJob` + `secret` 的方式部署
 
 ```bash

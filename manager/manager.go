@@ -74,13 +74,19 @@ func (m *Manager) Run() {
 	// 当前共享带宽最大带宽速率,单位是Mbps
 	currentMaxBandwidthRate := math.Max(rxDataPoint.Value, txDataPoint.Value)
 	if currentMaxBandwidthRate > float64(cbpInfo.MaxBandwidth) {
-		//带宽高峰，需要缩容
-		m.ScaleDown(currentMaxBandwidthRate)
+		log.Info().Msg("带宽高峰，需要缩容")
+		err := m.ScaleDown(currentMaxBandwidthRate)
+		if err != nil {
+			log.Err(err)
+		}
 		return
 	}
 	if float64(cbpInfo.MinBandwidth)-currentMaxBandwidthRate > 5 {
-		//带宽低谷，需要扩容
-		m.ScaleUp(currentMaxBandwidthRate)
+		log.Info().Msg("带宽低谷，需要扩容")
+		err := m.ScaleUp(currentMaxBandwidthRate)
+		if err != nil {
+			log.Err(err)
+		}
 		return
 	}
 	// 5 Mbps 以内就不优化了，没啥区别
@@ -97,6 +103,10 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 	if err != nil {
 		return err
 	}
+	if len(currentUnbindEIPs) < 1 {
+		return fmt.Errorf("len(currentUnbindEIPs)==0")
+	}
+	log.Info().Msgf("len(currentUnbindEIPs):%v", len(currentUnbindEIPs))
 	var eipWaitLock sync.WaitGroup
 	checkFrequency := cbpInfo.CheckFrequency
 	eipWaitLock.Add(len(currentUnbindEIPs))
@@ -117,8 +127,11 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 			})
 		}(&eipInfo, &eipWaitLock)
 	}
+	eipWaitLock.Wait()
+	log.Info().Msgf("eipAvgList:%v", eipAvgList)
 	//根据剩余带宽动态规划
 	bandwidthLimit := m.cbp.MinBandwidth - int(currentBandwidthRate)
+	log.Info().Msgf("bandwidthLimit:%v Mbps", bandwidthLimit)
 	bestPublicIpAddress, err := model.NewBestPublicIpAddress(bandwidthLimit, eipAvgList)
 	if err != nil {
 		return err
@@ -126,12 +139,12 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 	// 动态优化求最优IP
 	bestEIPs := bestPublicIpAddress.FindBestWithoutBrain()
 	if len(bestEIPs) < 1 {
+		log.Info().Msg("剩余带宽不够绑定新的EIP")
 		return nil
 	}
 	if len(m.dingtalkNotifyToken) > 0 {
 		m.ding(bestEIPs, ADD_EIP_TEMPLATE)
 	}
-
 	// TODO: 周密测试后再取消注释
 	// for _, eipInfo := range bestEIPs {
 	// 	m.sdk.AddCommonBandwidthPackageIp(cbpInfo.ID, eipInfo.AllocationId)
@@ -185,6 +198,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 			})
 		}(&eipInfo, &eipWaitLock)
 	}
+	eipWaitLock.Wait()
 	bestPublicIpAddress, err := model.NewBestPublicIpAddress(m.cbp.MinBandwidth, eipAvgList)
 	if err != nil {
 		return err
@@ -192,6 +206,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 	//进行动态优化
 	bestIPs := bestPublicIpAddress.FindBestWithoutBrain()
 	if len(bestIPs) < 1 {
+		log.Info().Msg("没啥好优化的,再见")
 		return nil
 	}
 	currentEIPsInCBWP, err := m.sdk.GetCurrentEipAddressesInCBWP(cbpInfo.ID)
@@ -222,6 +237,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 			lowestEIPsAddress = append(lowestEIPsAddress, ip.AllocationId)
 		}
 	}
+	log.Debug().Msgf("lowestEIPs:%v", lowestEIPs)
 	if len(m.dingtalkNotifyToken) > 0 {
 		m.ding(lowestEIPs, REMOVE_EIP_TEMPLATE)
 	}

@@ -31,7 +31,7 @@ const (
 func (sdk *AliyunSDK) DescribeMetricList(metricName string, cbp *model.CommonBandwidthPackage) (dataPoints []model.Datapoint, err error) {
 	now := time.Now()
 	frequency, err := time.ParseDuration(cbp.CheckFrequency)
-	log.Info().Msgf("duration: %s", frequency.String())
+	log.Info().Msgf("DescribeMetricList duration: %s", frequency.String())
 	if err != nil {
 		return nil, err
 	}

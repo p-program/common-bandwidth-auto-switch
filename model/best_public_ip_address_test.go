@@ -40,7 +40,7 @@ func TestFindBest(t *testing.T) {
 	bandwidthInfos := prepareEipAvgBandwidthInfos2()
 	bestIPs, err := NewBestPublicIpAddress(40, bandwidthInfos)
 	assert.Nil(t, err)
-	best := bestIPs.FindBest()
+	best := bestIPs.FindBestWithoutBrain()
 	bestIPs.print()
 	t.Logf("len(best):%v", len(best))
 	for j := 0; j < len(best); j++ {
