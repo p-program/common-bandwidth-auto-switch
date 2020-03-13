@@ -6,7 +6,6 @@ RUN apk update
 RUN GOARCH=amd64 CGO_ENABLED=0 go build -mod vendor -o common-bandwidth-auto-switch  github.com/zeusro/common-bandwidth-auto-switch 
 
 FROM alpine:3.10
-RUN mkdir -p /app
 COPY --from=build-env /src/github.com/zeusro/common-bandwidth-auto-switch/common-bandwidth-auto-switch /app/common-bandwidth-auto-switch
-RUN chmod +x /app/common-bandwidth-auto-switch
+WORKDIR /app
 ENTRYPOINT ["/app/common-bandwidth-auto-switch"]
