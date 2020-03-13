@@ -45,6 +45,13 @@ kubectl apply -f deploy/kubernetes/cronjob.yaml
 
 只是说出于安全,不太这么建议这么做.
 
+## cleanup
+
+```bash
+kubectl delete cronjob common-bandwidth-auto-switch
+kubectl delete secret cbwp-config
+```
+
 ## warning
 
 用到的接口:
