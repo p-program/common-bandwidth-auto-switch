@@ -1,4 +1,4 @@
-FROM golang:1.14.0-alpine3.11
+FROM golang:1.14.0-alpine3.11 as build-env
 ADD . /src/github.com/zeusro/common-bandwidth-auto-switch
 WORKDIR /src/github.com/zeusro/common-bandwidth-auto-switch
 RUN apk update
