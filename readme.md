@@ -42,6 +42,7 @@ docker run -it -v /root/common-bandwidth-auto-switch/config.yaml:/app/config.yam
 例子使用了 Kubernetes 的 `CronJob` + `secret` 的方式部署
 
 ```bash
+kubectl delete secret cbwp-config
 # edit your config
 kubectl create secret generic cbwp-config --from-file=config.yaml=config-example.yaml
 # or

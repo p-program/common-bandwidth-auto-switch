@@ -7,3 +7,5 @@ aliyun:
   region: "cn-shenzhen"
   accessKeyId: ""
   accessSecret: ""
+dingTalk:
+  notificationToken:  
