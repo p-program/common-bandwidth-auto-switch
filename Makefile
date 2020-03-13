@@ -22,6 +22,6 @@ mirror:
 	docker push $(MIRROR_IMAGE)
 
 up:
-	docker-compose build --force-rm --no-cache --pull
+	docker-compose build --force-rm --no-cache
 	docker-compose up
 
