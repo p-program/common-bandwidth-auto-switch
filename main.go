@@ -19,6 +19,7 @@ func main() {
 	path := path.Join("config.yaml")
 	err := config.LoadYAML(path)
 	if err != nil {
+		log.Warn().Msg(err.Error())
 		path = "config-example.yaml"
 		err := config.LoadYAML(path)
 		if err != nil {
