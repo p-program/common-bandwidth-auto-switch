@@ -32,7 +32,7 @@
 ### docker
 
 ```bash
-docker run zeusro/common-bandwidth-auto-switch:latest
+docker run zeusro/common-bandwidth-auto-switch:latest -v config.yaml:/app/config.yaml
 ```
 
 ### kubernetes
