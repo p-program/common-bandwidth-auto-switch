@@ -27,19 +27,41 @@
 
 当前共享带宽 < 期望值时,自动把高带宽的EIP添加入共享带宽
 
-## example
-
-例子使用了 Kubernetes 的 CronJob
-
 ## usage
+
+例子使用了 Kubernetes 的 `CronJob` + `secret` 的方式部署
+
+```bash
+# edit your config
+kubectl create secret generic cbwp-config --from-file=config.yaml=config-example.yaml
+# or
+kubectl create secret generic cbwp-config --from-file=config.yaml=config.yaml
+kubectl apply -f deploy/kubernetes/cronjob.yaml
+```
+
+我在`.dockerignore`里面留了一手,没有忽略掉 `config-example.yaml` 文件,也可以配置这个文件,然后直接把配置打包到容器里面,这样volume都不需要配置
+
+配置的加载顺序为:先读取 `config.yaml` , `config.yaml`不存在再读取 `config-example.yaml`文件.
+
+只是说出于安全,不太这么建议这么做.
 
 ## warning
 
 用到的接口:
 
-cms: `DescribeMetricList`
+```bash
+vpc
+DescribeEipMonitorData
+DescribeEipAddresses
 
-vpc: `DescribeCommonBandwidthPackages` , `AddCommonBandwidthPackageIp` , `RemoveCommonBandwidthPackageIp` `DescribeEipMonitorData` `DescribeEipAddresses` , `DescribeInuseEipAddresses`
+cms
+DescribeCommonBandwidthPackages
+AddCommonBandwidthPackageIp
+RemoveCommonBandwidthPackageIp
+
+cms
+DescribeMetricList
+```
 
 由于需要操作VPC和共享带宽，这类都属于**高危操作**，RAM授权记得弄好。
 

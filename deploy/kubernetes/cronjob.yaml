@@ -1,0 +1,44 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  labels:
+    app: common-bandwidth-auto-switch
+  name: common-bandwidth-auto-switch
+spec:
+  # 如果运行job超过时间周期,自动替换掉先前的作业
+  concurrencyPolicy: Replace
+  # 不保留失败任务
+  failedJobsHistoryLimit: 0
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: common-bandwidth-auto-switch
+          name: common-bandwidth-auto-switch
+        spec:
+          containers:
+          - image: zeusro/common-bandwidth-auto-switch:latest
+            imagePullPolicy: IfNotPresent
+            name: backup
+            resources: {}
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+          - name: cbwp-config
+            secret:
+              secretName: cbwp-config
+              items:
+              - key: config.yaml
+                path: config.yaml
+  # 时间表达式,每隔10分钟自动运行
+  schedule: '*/10 * * * *'
+  # 只保留3个历史作业 kubectl get job
+  successfulJobsHistoryLimit: 3
+  suspend: false
