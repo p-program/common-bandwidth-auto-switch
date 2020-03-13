@@ -6,4 +6,4 @@ services:
       dockerfile: "deploy/docker/Dockerfile"
     restart: "no"
     volumes:    
-    - ./config.yaml:/src/github.com/zeusro/common-bandwidth-auto-switch/config.yaml:ro
+    - ./config.yaml:/app/config.yaml
