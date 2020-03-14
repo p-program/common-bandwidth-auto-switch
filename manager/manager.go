@@ -106,13 +106,16 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 	if len(currentUnbindEIPs) < 1 {
 		return fmt.Errorf("len(currentUnbindEIPs)==0")
 	}
-	log.Info().Msgf("len(currentUnbindEIPs):%v", len(currentUnbindEIPs))
+	log.Info().Msgf("len(currentUnbindEIPs):%v;currentUnbindEIPs:%v", len(currentUnbindEIPs), currentUnbindEIPs)
+	for k, v := range currentUnbindEIPs {
+		log.Info().Msgf("currentUnbindEIPs[%v] ;EIP: %s ;EIPID: %s", k, v.IpAddress, v.AllocationId)
+	}
 	var eipWaitLock sync.WaitGroup
 	checkFrequency := cbpInfo.CheckFrequency
 	eipWaitLock.Add(len(currentUnbindEIPs))
 	var eipAvgList []model.EipAvgBandwidthInfo
 	for _, eipInfo := range currentUnbindEIPs {
-		go func(eip *vpc.EipAddress, wg *sync.WaitGroup) {
+		go func(eip vpc.EipAddress, wg *sync.WaitGroup) {
 			defer wg.Done()
 			avgBandwidth, err := m.sdk.DescribeEipAvgMonitorData(eip.AllocationId, checkFrequency)
 			//FIXME: 局部失败要怎么处理
@@ -125,13 +128,13 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 				AllocationId: eip.AllocationId,
 				Value:        avgBandwidth,
 			})
-		}(&eipInfo, &eipWaitLock)
+		}(eipInfo, &eipWaitLock)
 	}
 	eipWaitLock.Wait()
 	log.Info().Msgf("eipAvgList:%v", eipAvgList)
 	//根据剩余带宽动态规划
 	bandwidthLimit := m.cbp.MinBandwidth - int(currentBandwidthRate)
-	log.Info().Msgf("bandwidthLimit:%v Mbps", bandwidthLimit)
+	log.Info().Msgf("剩余可用带宽bandwidthLimit:%v Mbps", bandwidthLimit)
 	bestPublicIpAddress, err := model.NewBestPublicIpAddress(bandwidthLimit, eipAvgList)
 	if err != nil {
 		return err

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"runtime"
 
@@ -11,17 +12,37 @@ import (
 	"github.com/zeusro/common-bandwidth-auto-switch/sdk/aliyun"
 )
 
+const (
+	defaultConfig = "config.yaml"
+	exampleConfig = "config-example.yaml"
+	myName        = `
+✄╔════╗
+✄╚══╗═║
+✄──╔╝╔╝╔══╗╔╗╔╗╔══╗╔═╗╔══╗
+✄─╔╝╔╝─║║═╣║║║║║══╣║╔╝║╔╗║
+✄╔╝═╚═╗║║═╣║╚╝║╠══║║║─║╚╝║
+✄╚════╝╚══╝╚══╝╚══╝╚╝─╚══╝
+`
+	LINE = "----------------------------------------"
+)
+
 func main() {
-	fmt.Println("start")
-	fmt.Println("Power by Zeusro")
+	fmt.Println(LINE)
+	fmt.Print("Power by")
+	fmt.Println(myName)
+	fmt.Println(LINE)
 	setMaxProcs()
 	config := model.NewProjectConfig()
-	path := path.Join("config.yaml")
-	err := config.LoadYAML(path)
+	homeDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	configPath := path.Join(homeDir, defaultConfig)
+	err = config.LoadYAML(configPath)
 	if err != nil {
 		log.Warn().Msg(err.Error())
-		path = "config-example.yaml"
-		err := config.LoadYAML(path)
+		configPath = path.Join(homeDir, exampleConfig)
+		err := config.LoadYAML(configPath)
 		if err != nil {
 			panic(err)
 		}
@@ -37,22 +58,6 @@ func main() {
 		manager.Run()
 	}
 
-}
-
-func prepareSDK() *aliyun.AliyunSDK {
-	config := model.NewProjectConfig()
-	path := path.Join("config.yaml")
-	err := config.LoadYAML(path)
-	if err != nil {
-		path = "config-example.yaml"
-		err := config.LoadYAML(path)
-		if err != nil {
-			panic(err)
-		}
-	}
-	aliyunSDKConfig := config.AliyunConfig
-	sdk := aliyun.NewAliyunSDK(&aliyunSDKConfig)
-	return sdk
 }
 
 func setMaxProcs() {
