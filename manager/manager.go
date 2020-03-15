@@ -57,10 +57,11 @@ func (m *Manager) Run() {
 	currentRateWG.Wait()
 	// 共享带宽信息
 	cbpInfo := m.cbp
-	log.Info().Msgf("当前共享带宽实例: %s ;平均流入带宽: %v ;平均流出带宽: %v ;",
+	currentCBWPInfo := fmt.Sprintf("当前共享带宽实例: %s ;平均流入带宽: %v ;平均流出带宽: %v ;",
 		cbpInfo.ID,
 		rxDataPoint.Value,
 		txDataPoint.Value)
+	log.Info().Msg(currentCBWPInfo)
 	errs := make([]error, 2)
 	if err1 != nil {
 		errs = append(errs, err1)
@@ -91,7 +92,14 @@ func (m *Manager) Run() {
 	}
 	// 5 Mbps 以内就不优化了，没啥区别
 	//无需扩容,也无需缩容
-	log.Info().Msg("无需扩容,也无需缩容")
+	reportContent := "无需扩容,也无需缩容"
+	log.Info().Msg(reportContent)
+	if len(m.dingtalkNotifyToken) > 0 {
+		markdownBuilder := util.NewMarkdownBuilder()
+		markdownBuilder.AddText(currentCBWPInfo)
+		markdownBuilder.AddText(reportContent)
+		m.dingReport(markdownBuilder.BuilderText())
+	}
 }
 
 // ScaleUp 扩容:将低带宽EIP加入共享带宽
@@ -146,7 +154,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 		return nil
 	}
 	if len(m.dingtalkNotifyToken) > 0 {
-		m.ding(bestEIPs, ADD_EIP_TEMPLATE)
+		m.dingEIPs(bestEIPs, ADD_EIP_TEMPLATE)
 	}
 	// TODO: 周密测试后再取消注释
 	// for _, eipInfo := range bestEIPs {
@@ -155,18 +163,25 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 	return nil
 }
 
-func (m *Manager) ding(ips []model.EipAvgBandwidthInfo, notifyTemplate string) {
+func (m *Manager) dingReport(content string) {
+	token := m.dingtalkNotifyToken
+	ding := util.NewDingTalk(token)
 	cbwpID := m.cbp.ID
-	if token := m.dingtalkNotifyToken; len(token) > 0 {
-		ding := util.NewDingTalk(token)
-		markdownBuilder := util.NewMarkdownBuilder()
-		for _, eipInfo := range ips {
-			content := fmt.Sprintf(ADD_EIP_TEMPLATE, eipInfo.IpAddress, eipInfo.AllocationId)
-			markdownBuilder.AddText(content)
-		}
-		title := fmt.Sprintf("共享带宽动态优化(%s)", cbwpID)
-		ding.DingMarkdown(title, markdownBuilder.BuilderText())
+	title := fmt.Sprintf("共享带宽动态优化(%s)", cbwpID)
+	ding.DingMarkdown(title, content)
+}
+
+func (m *Manager) dingEIPs(ips []model.EipAvgBandwidthInfo, notifyTemplate string) {
+	cbwpID := m.cbp.ID
+	token := m.dingtalkNotifyToken
+	ding := util.NewDingTalk(token)
+	markdownBuilder := util.NewMarkdownBuilder()
+	for _, eipInfo := range ips {
+		content := fmt.Sprintf(notifyTemplate, eipInfo.IpAddress, eipInfo.AllocationId)
+		markdownBuilder.AddText(content)
 	}
+	title := fmt.Sprintf("共享带宽动态优化(%s)", cbwpID)
+	ding.DingMarkdown(title, markdownBuilder.BuilderText())
 }
 
 //ScaleDown 缩容:将高带宽EIP移除共享带宽
@@ -242,7 +257,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 	}
 	log.Debug().Msgf("lowestEIPs:%v", lowestEIPs)
 	if len(m.dingtalkNotifyToken) > 0 {
-		m.ding(lowestEIPs, REMOVE_EIP_TEMPLATE)
+		m.dingEIPs(lowestEIPs, REMOVE_EIP_TEMPLATE)
 	}
 	// TODO: 周密测试后再取消注释
 	// m.sdk.RemoveCommonBandwidthPackageIps(cbpInfo.ID, lowestEIPsAddress)

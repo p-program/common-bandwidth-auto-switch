@@ -7,5 +7,6 @@ RUN GOARCH=amd64 CGO_ENABLED=0 go build -mod vendor -o common-bandwidth-auto-swi
 
 FROM alpine:3.10
 COPY --from=build-env /src/github.com/zeusro/common-bandwidth-auto-switch/common-bandwidth-auto-switch /app/common-bandwidth-auto-switch
+# COPY config.yaml /app/config.yaml
 WORKDIR /app
 ENTRYPOINT ["/app/common-bandwidth-auto-switch"]
