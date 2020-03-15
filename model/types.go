@@ -8,6 +8,7 @@ type CommonBandwidthPackage struct {
 	// MinBandwidth 可接受最小带宽(用于扩容)
 	MinBandwidth   int    `yaml:"minBandwidth"`
 	CheckFrequency string `yaml:"checkFrequency"`
+	Region         string `yaml:"region"`
 }
 
 type AliyunConfig struct {

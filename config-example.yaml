@@ -1,11 +1,20 @@
 commonBandwidthPackages:
+  # 以cbwp ID开头的共享带宽信息
   - id: "cbwp-"
+    # 当前共享带宽如果超过最大带宽，会缩容
     maxBandwidth: 60
+    # 当前共享带宽如果超过最大带宽，会扩容
     minBandwidth: 40
-    checkFrequency: 1h
+    # 30m 表示取过去30分钟的共享带宽，EIP检测数据
+    checkFrequency: 30m
+    # 共享带宽所在区域
+    region: "cn-shenzhen"
 aliyun:
+  # 当前共享带宽所在region
   region: "cn-shenzhen"
+  # 阿里云 RAM 信息
   accessKeyId: ""
   accessSecret: ""
 dingTalk:
+  # 钉钉消息推送
   notificationToken:  

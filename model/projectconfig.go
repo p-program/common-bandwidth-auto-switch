@@ -10,7 +10,7 @@ import (
 type ProjectConfig struct {
 	CommonBandwidthPackages []CommonBandwidthPackage `yaml:"commonBandwidthPackages"`
 	AliyunConfig            AliyunConfig             `yaml:"aliyun"`
-	DingTalkConfig          DingTalkConfig           `yaml:dingTalk`
+	DingTalkConfig          DingTalkConfig           `yaml:"dingTalk"`
 	// for copy
 	// `yaml:""`
 }

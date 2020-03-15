@@ -64,6 +64,7 @@ func (d *DingTalk) Ding(msg *DingTalkMsg) (err error) {
 		log.Err(finalErr)
 		return err
 	}
+	defer resp.Body.Close()
 	if resp != nil && resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("failed to send msg to dingtalk, because the response code is %d", resp.StatusCode)
 		log.Err(err)

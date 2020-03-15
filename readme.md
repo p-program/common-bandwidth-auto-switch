@@ -39,28 +39,18 @@ docker run -it -v /root/common-bandwidth-auto-switch/config.yaml:/app/config.yam
 
 ### kubernetes
 
-例子使用了 Kubernetes 的 `CronJob` + `secret` 的方式部署
+例子使用了 Kubernetes 的 `CronJob` 的方式部署
 
 ```bash
-kubectl delete secret cbwp-config
-# edit your config
-kubectl create secret generic cbwp-config --from-file=config.yaml=config-example.yaml
-# or
-kubectl create secret generic cbwp-config --from-file=config.yaml=config.yaml
 kubectl apply -f deploy/kubernetes/cronjob.yaml
 ```
 
-我在`.dockerignore`里面留了一手,没有忽略掉 `config-example.yaml` 文件,也可以配置这个文件,然后直接把配置打包到容器里面,这样volume都不需要配置
-
 配置的加载顺序为:先读取 `config.yaml` , `config.yaml`不存在再读取 `config-example.yaml`文件.
-
-只是说出于安全,不太这么建议这么做.
 
 ## cleanup
 
 ```bash
 kubectl delete cronjob common-bandwidth-auto-switch
-kubectl delete secret cbwp-config
 ```
 
 ## warning

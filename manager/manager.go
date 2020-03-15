@@ -57,11 +57,11 @@ func (m *Manager) Run() {
 	currentRateWG.Wait()
 	// 共享带宽信息
 	cbpInfo := m.cbp
-	currentCBWPInfo := fmt.Sprintf("当前共享带宽实例: %s ;平均流入带宽: %v ;平均流出带宽: %v ;",
-		cbpInfo.ID,
-		rxDataPoint.Value,
-		txDataPoint.Value)
-	log.Info().Msg(currentCBWPInfo)
+	currentCBWP := fmt.Sprintf("当前共享带宽实例: %s", cbpInfo.ID)
+	currentCBWPIn := fmt.Sprintf("平均流入带宽: %v Mbps;", rxDataPoint.Value)
+	currentCBWPOut := fmt.Sprintf("平均流出带宽: %v Mbps;", txDataPoint.Value)
+
+	log.Info().Msg(currentCBWP + currentCBWPIn + currentCBWPOut)
 	errs := make([]error, 2)
 	if err1 != nil {
 		errs = append(errs, err1)
@@ -92,12 +92,16 @@ func (m *Manager) Run() {
 	}
 	// 5 Mbps 以内就不优化了，没啥区别
 	//无需扩容,也无需缩容
-	reportContent := "无需扩容,也无需缩容"
+	reportContent := "结论：无需扩容,也无需缩容"
 	log.Info().Msg(reportContent)
 	if len(m.dingtalkNotifyToken) > 0 {
 		markdownBuilder := util.NewMarkdownBuilder()
-		markdownBuilder.AddText(currentCBWPInfo)
-		markdownBuilder.AddText(reportContent)
+		markdownBuilder.AddText("当前共享带宽实例:")
+		u := fmt.Sprintf("https://vpcnext.console.aliyun.com/cbwp/%s/cbwps", cbpInfo.Region)
+		markdownBuilder.AddLink(cbpInfo.ID, u)
+		markdownBuilder.AddText(currentCBWPIn)
+		markdownBuilder.AddText(currentCBWPOut)
+		markdownBuilder.AddBload(reportContent)
 		m.dingReport(markdownBuilder.BuilderText())
 	}
 }
