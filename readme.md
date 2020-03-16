@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.com/zeusro/common-bandwidth-auto-switch.svg?branch=master)](https://travis-ci.com/zeusro/common-bandwidth-auto-switch)
+
+[](http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl.svg)
+
 # common-bandwidth-auto-switch
 
 ## why
