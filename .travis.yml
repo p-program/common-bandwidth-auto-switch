@@ -1,0 +1,41 @@
+language: go
+
+go:
+  - 1.14.x
+
+cache:
+  directories:
+  - $GOPATH/pkg/mod
+
+services:
+- docker
+
+env:
+  global:
+    - REGISTRY=registry.cn-shenzhen.aliyuncs.com
+
+jobs:
+  include:
+    - stage: build-shadow
+      before_script:
+        - export TAG=latest
+        - echo "TAG=${TAG}"
+      script:
+       - make mirror
+      before_deploy:
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${REGISTRY}
+      deploy:
+        provider: script
+        script: make release-shadow
+        skip_cleanup: true
+        on:
+          tags: true
+
+# notifications:
+#   webhooks:
+#     urls:
+#       - https://oapi.dingtalk.com/robot/send?access_token=
+#     on_success: change
+#     on_failure: always
+#     on_cancel:  never
+#     on_error:   always
