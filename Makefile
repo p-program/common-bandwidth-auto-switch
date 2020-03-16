@@ -16,11 +16,14 @@ buildAndRun:
 mirror:
 	docker build -t $(MIRROR_IMAGE) -f deploy/docker/Dockerfile .
 
-release-mirror:
+pull:
+	git reset --hard HEAD
+	git pull
+
+release-mirror: mirror
 	docker push $(MIRROR_IMAGE)
 
-rebuild:
-	git pull
+rebuild: pull	
 	docker build -t $(IMAGE) -f deploy/docker/Dockerfile .
 
 test:
