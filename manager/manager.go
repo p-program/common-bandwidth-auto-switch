@@ -10,7 +10,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/zeusro/common-bandwidth-auto-switch/model"
 	"github.com/zeusro/common-bandwidth-auto-switch/sdk/aliyun"
-	"github.com/zeusro/common-bandwidth-auto-switch/util"
 )
 
 const (
@@ -23,6 +22,8 @@ type Manager struct {
 	sdk                 *aliyun.AliyunSDK
 	cbp                 *model.CommonBandwidthPackage
 	dingtalkNotifyToken string
+	//dryRun true 表示以测试模式运行，最后不会真的添加/删除EIP
+	dryRun bool
 }
 
 func NewManager(sdk *aliyun.AliyunSDK, cbp *model.CommonBandwidthPackage) *Manager {
@@ -31,6 +32,11 @@ func NewManager(sdk *aliyun.AliyunSDK, cbp *model.CommonBandwidthPackage) *Manag
 		cbp: cbp,
 	}
 	return m
+}
+
+// DryRun true 表示以测试模式运行，最后不会真的添加/删除EIP
+func (m *Manager) DryRun(dryRun bool) {
+	m.dryRun = dryRun
 }
 
 // UseDingTalkNotification 使用钉钉消息推送
@@ -147,7 +153,9 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	log.Info().Msgf("eipAvgList:%v", eipAvgList)
 	//根据剩余带宽动态规划
 	bandwidthLimit := m.cbp.MinBandwidth - int(currentBandwidthRate)
-	log.Info().Msgf("剩余可用带宽bandwidthLimit:%v Mbps", bandwidthLimit)
+	currentSituation := fmt.Sprintf("剩余可用带宽bandwidthLimit: %v Mbps", bandwidthLimit)
+	log.Info().Msgf(currentSituation)
+	reporter.AddContent(currentSituation)
 	bestPublicIpAddress, err := model.NewBestPublicIpAddress(bandwidthLimit, eipAvgList)
 	if err != nil {
 		return err
@@ -155,30 +163,24 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	// 动态优化求最优IP
 	bestEIPs := bestPublicIpAddress.FindBestWithoutBrain()
 	if len(bestEIPs) < 1 {
-		log.Info().Msg("剩余带宽不够绑定新的EIP")
+		msg := "剩余带宽不够绑定新的EIP"
+		log.Info().Msg(msg)
+		if len(m.dingtalkNotifyToken) > 0 {
+			reporter.AddConclusion(msg)
+			reporter.ExportToDingTalk(m.dingtalkNotifyToken)
+		}
 		return nil
 	}
-	for _, eipInfo := range bestEIPs {
-		reporter.AddContent(fmt.Sprintf(ADD_EIP_TEMPLATE, eipInfo.AllocationId, eipInfo.IpAddress))
-		m.sdk.AddCommonBandwidthPackageIp(cbpInfo.ID, eipInfo.AllocationId)
+	if !m.dryRun {
+		for _, eipInfo := range bestEIPs {
+			reporter.AddContent(fmt.Sprintf(ADD_EIP_TEMPLATE, eipInfo.AllocationId, eipInfo.IpAddress))
+			m.sdk.AddCommonBandwidthPackageIp(cbpInfo.ID, eipInfo.AllocationId)
+		}
 	}
 	if len(m.dingtalkNotifyToken) > 0 {
 		reporter.ExportToDingTalk(m.dingtalkNotifyToken)
 	}
 	return nil
-}
-
-func (m *Manager) dingEIPs(ips []model.EipAvgBandwidthInfo, notifyTemplate string) {
-	cbwpID := m.cbp.ID
-	token := m.dingtalkNotifyToken
-	ding := util.NewDingTalk(token)
-	markdownBuilder := util.NewMarkdownBuilder()
-	for _, eipInfo := range ips {
-		content := fmt.Sprintf(notifyTemplate, eipInfo.IpAddress, eipInfo.AllocationId)
-		markdownBuilder.AddText(content)
-	}
-	title := fmt.Sprintf("共享带宽动态优化(%s)", cbwpID)
-	ding.DingMarkdown(title, markdownBuilder.BuilderText())
 }
 
 //ScaleDown 缩容:将高带宽EIP移除共享带宽
@@ -259,6 +261,8 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 	if len(m.dingtalkNotifyToken) > 0 {
 		reporter.ExportToDingTalk(m.dingtalkNotifyToken)
 	}
-	m.sdk.RemoveCommonBandwidthPackageIps(cbpInfo.ID, lowestEIPsAddress)
+	if !m.dryRun {
+		m.sdk.RemoveCommonBandwidthPackageIps(cbpInfo.ID, lowestEIPsAddress)
+	}
 	return nil
 }

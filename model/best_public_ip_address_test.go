@@ -41,7 +41,7 @@ func TestFindBest(t *testing.T) {
 	bestIPs, err := NewBestPublicIpAddress(40, bandwidthInfos)
 	assert.Nil(t, err)
 	best := bestIPs.FindBestWithoutBrain()
-	bestIPs.print()
+	bestIPs.Print()
 	t.Logf("len(best):%v", len(best))
 	for j := 0; j < len(best); j++ {
 		t.Logf("%v \n", best[j])

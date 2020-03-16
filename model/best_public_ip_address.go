@@ -74,8 +74,6 @@ func (m *BestPublicIpAddress) FindBestWithoutBrain() []EipAvgBandwidthInfo {
 // 问题也可以转化为找出数组中任意元素相加之和等于特定值
 func (m *BestPublicIpAddress) FindBest(i, j int) []EipAvgBandwidthInfo {
 	m.dynamic()
-	//FIXME: for debug
-	m.print()
 	// fmt.Printf("m.eipsLen:%v ;\n", m.eipsLen)
 	return m.cellsMeshPointer[i][j]
 }
@@ -88,7 +86,7 @@ func (m *BestPublicIpAddress) dynamic() {
 		}
 	}
 }
-func (m *BestPublicIpAddress) print() {
+func (m *BestPublicIpAddress) Print() {
 	for j := 0; j <= m.eipsLen; j++ {
 		// fmt.Printf("%v \n", m.cellsMesh[j])
 		for _, v := range m.cellsMesh[j] {
