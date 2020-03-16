@@ -3,6 +3,7 @@ PREFIX		  ?= zeusro
 APP_NAME      ?= common-bandwidth-auto-switch:latest
 IMAGE		  ?= $(PREFIX)/$(APP_NAME)
 MIRROR_IMAGE  ?= registry.cn-shenzhen.aliyuncs.com/amiba/common-bandwidth-auto-switch:latest
+ARCH		  ?=amd64
 
 auto_commit:   
 	git add .
@@ -10,7 +11,7 @@ auto_commit:
 	git push
 
 buildAndRun:
-	go build
+	GOARCH=$(ARCH) CGO_ENABLED=0 go build
 	./common-bandwidth-auto-switch
 
 mirror:

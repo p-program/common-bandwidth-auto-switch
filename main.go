@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -57,7 +58,21 @@ func main() {
 		}
 		manager.Run()
 	}
+	fmt.Println("readFile")
+	readFile()
 
+}
+
+func readFile() {
+	files, err := ioutil.ReadDir("/app2")
+	if err != nil {
+		log.Err(err)
+		fmt.Print("/app2 has no file")
+		return
+	}
+	for _, file := range files {
+		fmt.Println(file.Name())
+	}
 }
 
 func setMaxProcs() {
