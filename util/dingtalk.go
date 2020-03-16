@@ -38,6 +38,7 @@ func NewDingTalk(token string) *DingTalk {
 	return &DingTalk{token}
 }
 
+// DingMarkdown 推送markdown 信息，title其实没什么卵用
 func (d *DingTalk) DingMarkdown(title, markdownText string) (err error) {
 	msg := &DingTalkMsg{
 		MsgType: "markdown",

@@ -9,7 +9,7 @@ import (
 	"github.com/zeusro/common-bandwidth-auto-switch/sdk/aliyun"
 )
 
-func TestScaleUp(t *testing.T) {
+func TestRun(t *testing.T) {
 	cfg := prepareConfing(t)
 	useDingTalkNotification := len(cfg.DingTalkConfig.NotificationToken) > 0
 	sdk := prepareSDK(cfg)

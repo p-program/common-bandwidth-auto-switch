@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	ADD_EIP_TEMPLATE    = "添加EIP: %s ;EIPID: %s"
-	REMOVE_EIP_TEMPLATE = "删除EIP: %s ;EIPID: %s"
+	ADD_EIP_TEMPLATE    = "添加EIP: %s ;\n\nIP: %s "
+	REMOVE_EIP_TEMPLATE = "删除EIP: %s ;\n\nIP: %s "
 )
 
 // Manager 控制终端
@@ -57,10 +57,12 @@ func (m *Manager) Run() {
 	currentRateWG.Wait()
 	// 共享带宽信息
 	cbpInfo := m.cbp
+	finalReport := NewManagerReporter(cbpInfo)
 	currentCBWP := fmt.Sprintf("当前共享带宽实例: %s", cbpInfo.ID)
 	currentCBWPIn := fmt.Sprintf("平均流入带宽: %v Mbps;", rxDataPoint.Value)
+	finalReport.AddContent(currentCBWPIn)
 	currentCBWPOut := fmt.Sprintf("平均流出带宽: %v Mbps;", txDataPoint.Value)
-
+	finalReport.AddContent(currentCBWPOut)
 	log.Info().Msg(currentCBWP + currentCBWPIn + currentCBWPOut)
 	errs := make([]error, 2)
 	if err1 != nil {
@@ -72,42 +74,41 @@ func (m *Manager) Run() {
 	if len(errs) > 0 {
 		log.Debug().Errs("goroutine get rate err", []error{err1, err2})
 	}
+	var onclusion string
 	// 当前共享带宽最大带宽速率,单位是Mbps
 	currentMaxBandwidthRate := math.Max(rxDataPoint.Value, txDataPoint.Value)
 	if currentMaxBandwidthRate > float64(cbpInfo.MaxBandwidth) {
-		log.Info().Msg("带宽高峰，需要缩容")
-		err := m.ScaleDown(currentMaxBandwidthRate)
-		if err != nil {
-			log.Err(err)
-		}
-		return
-	}
-	if float64(cbpInfo.MinBandwidth)-currentMaxBandwidthRate > 5 {
-		log.Info().Msg("带宽低谷，需要扩容")
-		err := m.ScaleUp(currentMaxBandwidthRate)
+		onclusion = "带宽高峰，需要缩容"
+		log.Warn().Msg(onclusion)
+		finalReport.AddConclusion(onclusion)
+		err := m.ScaleDown(currentMaxBandwidthRate, finalReport)
 		if err != nil {
 			log.Err(err)
 		}
 		return
 	}
 	// 5 Mbps 以内就不优化了，没啥区别
-	//无需扩容,也无需缩容
-	reportContent := "结论：无需扩容,也无需缩容"
-	log.Info().Msg(reportContent)
-	if len(m.dingtalkNotifyToken) > 0 {
-		markdownBuilder := util.NewMarkdownBuilder()
-		markdownBuilder.AddText("当前共享带宽实例:")
-		u := fmt.Sprintf("https://vpcnext.console.aliyun.com/cbwp/%s/cbwps", cbpInfo.Region)
-		markdownBuilder.AddLink(cbpInfo.ID, u)
-		markdownBuilder.AddText(currentCBWPIn)
-		markdownBuilder.AddText(currentCBWPOut)
-		markdownBuilder.AddBload(reportContent)
-		m.dingReport(markdownBuilder.BuilderText())
+	if float64(cbpInfo.MinBandwidth)-currentMaxBandwidthRate > 5 {
+		onclusion = "带宽低谷，需要扩容"
+		log.Warn().Msg(onclusion)
+		finalReport.AddConclusion(onclusion)
+		err := m.ScaleUp(currentMaxBandwidthRate, finalReport)
+		if err != nil {
+			log.Err(err)
+		}
+		return
 	}
+	//无需扩容,也无需缩容
+	onclusion = "无需扩容,也无需缩容"
+	log.Info().Msg(onclusion)
+	// if len(m.dingtalkNotifyToken) > 0 {
+	// 	finalReport.AddConclusion(onclusion)
+	// 	finalReport.ExportToDingTalk(m.dingtalkNotifyToken)
+	// }
 }
 
 // ScaleUp 扩容:将低带宽EIP加入共享带宽
-func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
+func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporter) (err error) {
 	cbpInfo := m.cbp
 	cbwpID := cbpInfo.ID
 	//获取当前 region 下未绑定共享带宽的IP列表
@@ -157,21 +158,14 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64) (err error) {
 		log.Info().Msg("剩余带宽不够绑定新的EIP")
 		return nil
 	}
-	if len(m.dingtalkNotifyToken) > 0 {
-		m.dingEIPs(bestEIPs, ADD_EIP_TEMPLATE)
-	}
 	for _, eipInfo := range bestEIPs {
+		reporter.AddContent(fmt.Sprintf(ADD_EIP_TEMPLATE, eipInfo.AllocationId, eipInfo.IpAddress))
 		m.sdk.AddCommonBandwidthPackageIp(cbpInfo.ID, eipInfo.AllocationId)
 	}
+	if len(m.dingtalkNotifyToken) > 0 {
+		reporter.ExportToDingTalk(m.dingtalkNotifyToken)
+	}
 	return nil
-}
-
-func (m *Manager) dingReport(content string) {
-	token := m.dingtalkNotifyToken
-	ding := util.NewDingTalk(token)
-	cbwpID := m.cbp.ID
-	title := fmt.Sprintf("共享带宽动态优化(%s)", cbwpID)
-	ding.DingMarkdown(title, content)
 }
 
 func (m *Manager) dingEIPs(ips []model.EipAvgBandwidthInfo, notifyTemplate string) {
@@ -188,7 +182,7 @@ func (m *Manager) dingEIPs(ips []model.EipAvgBandwidthInfo, notifyTemplate strin
 }
 
 //ScaleDown 缩容:将高带宽EIP移除共享带宽
-func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
+func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerReporter) (err error) {
 	cbpInfo := m.cbp
 	// 获取当前共享带宽内EIP列表
 	eipList, err := m.sdk.DescribeCommonBandwidthPackages(cbpInfo.ID)
@@ -227,7 +221,9 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 	//进行动态优化
 	bestIPs := bestPublicIpAddress.FindBestWithoutBrain()
 	if len(bestIPs) < 1 {
-		log.Info().Msg("没啥好优化的,再见")
+		step := "没啥好优化的,再见"
+		log.Info().Msg(step)
+		reporter.AddStep(step)
 		return nil
 	}
 	currentEIPsInCBWP, err := m.sdk.GetCurrentEipAddressesInCBWP(cbpInfo.ID)
@@ -255,12 +251,13 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64) (err error) {
 				AllocationId: ip.AllocationId,
 			}
 			lowestEIPs = append(lowestEIPs, entity)
+			reporter.AddContent(fmt.Sprintf(REMOVE_EIP_TEMPLATE, entity.AllocationId, entity.IpAddress))
 			lowestEIPsAddress = append(lowestEIPsAddress, ip.AllocationId)
 		}
 	}
 	log.Debug().Msgf("lowestEIPs:%v", lowestEIPs)
 	if len(m.dingtalkNotifyToken) > 0 {
-		m.dingEIPs(lowestEIPs, REMOVE_EIP_TEMPLATE)
+		reporter.ExportToDingTalk(m.dingtalkNotifyToken)
 	}
 	m.sdk.RemoveCommonBandwidthPackageIps(cbpInfo.ID, lowestEIPsAddress)
 	return nil
