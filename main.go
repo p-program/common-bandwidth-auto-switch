@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -38,11 +37,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	configPath := path.Join(homeDir, defaultConfig)
+	configDir := path.Join(homeDir, "config")
+	configPath := path.Join(configDir, defaultConfig)
 	err = config.LoadYAML(configPath)
 	if err != nil {
 		log.Warn().Msg(err.Error())
-		configPath = path.Join(homeDir, exampleConfig)
+		configPath = path.Join(configDir, exampleConfig)
 		err := config.LoadYAML(configPath)
 		if err != nil {
 			panic(err)
@@ -57,21 +57,6 @@ func main() {
 			manager.UseDingTalkNotification(config.DingTalkConfig.NotificationToken)
 		}
 		manager.Run()
-	}
-	fmt.Println("readFile")
-	readFile()
-
-}
-
-func readFile() {
-	files, err := ioutil.ReadDir("/app2")
-	if err != nil {
-		log.Err(err)
-		fmt.Print("/app2 has no file")
-		return
-	}
-	for _, file := range files {
-		fmt.Println(file.Name())
 	}
 }
 

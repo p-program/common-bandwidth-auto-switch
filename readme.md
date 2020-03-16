@@ -34,7 +34,7 @@
 ### docker
 
 ```bash
-docker run -it -v /root/common-bandwidth-auto-switch/config.yaml:/app/config.yaml zeusro/common-bandwidth-auto-switch:latest
+docker run -it -v /root/common-bandwidth-auto-switch/config.yaml:/app/config/config.yaml zeusro/common-bandwidth-auto-switch:latest
 ```
 
 ### kubernetes
@@ -73,7 +73,7 @@ DescribeMetricList
 
 由于需要操作VPC和共享带宽，这类都属于**高危操作**，RAM授权记得弄好。
 
-## todo(todo means NEVER DO)
+## todo(NEVER DO)
 
 1. 阻塞,周期性运行,再加上健康检查
 1. 多实例运行
