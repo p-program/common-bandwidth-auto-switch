@@ -74,7 +74,9 @@ vi config.yaml
 ### docker
 
 ```bash
-docker run -it -v /root/common-bandwidth-auto-switch/config.yaml:/app/config/config.yaml zeusro/common-bandwidth-auto-switch:latest
+docker run -it \
+-v /root/common-bandwidth-auto-switch/config.yaml:/app/config/config.yaml \
+zeusro/common-bandwidth-auto-switch:latest
 ```
 
 ### kubernetes
