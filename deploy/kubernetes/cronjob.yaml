@@ -23,13 +23,24 @@ spec:
           containers:
           - image: zeusro/common-bandwidth-auto-switch:latest
             imagePullPolicy: IfNotPresent
-            name: backup
+            name: app
             resources: {}
+            volumeMounts:
+            - mountPath: /app/config
+              name: cbwp-config            
           dnsPolicy: ClusterFirst
           restartPolicy: Never
           schedulerName: default-scheduler
           securityContext: {}
           terminationGracePeriodSeconds: 30
+          volumes:
+          - configMap:
+              defaultMode: 420
+              items:
+              - key: config.yaml
+                path: config.yaml
+              name: cbwp-config
+            name: cbwp-config          
   # 时间表达式,每隔10分钟自动运行
   schedule: '*/10 * * * *'
   # 只保留3个历史作业 kubectl get job
