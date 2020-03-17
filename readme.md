@@ -71,12 +71,15 @@ cp config-example.yaml config.yaml
 vi config.yaml
 ```
 
-### docker
+### docker/docker-compose
 
 ```bash
+# docker
 docker run -it \
 -v /root/common-bandwidth-auto-switch/config.yaml:/app/config/config.yaml \
 zeusro/common-bandwidth-auto-switch:latest
+# docker-compose
+docker-compose up
 ```
 
 ### kubernetes
