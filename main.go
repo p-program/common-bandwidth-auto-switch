@@ -5,7 +5,9 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/zeusro/common-bandwidth-auto-switch/manager"
 	"github.com/zeusro/common-bandwidth-auto-switch/model"
@@ -25,6 +27,11 @@ const (
 `
 	LINE = "----------------------------------------"
 )
+
+func init() {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+}
 
 func main() {
 	fmt.Println(LINE)
@@ -47,6 +54,10 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+	}
+	if strings.EqualFold("debug", config.LogLevel) {
+		log.Info().Msgf("config.LogLevel:%s", config.LogLevel)
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 	aliyunSDKConfig := config.AliyunConfig
 	useDingTalkNotification := len(config.DingTalkConfig.NotificationToken) > 0

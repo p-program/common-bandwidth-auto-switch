@@ -5,3 +5,5 @@ common-bandwidth-auto-switch
 coverage/
 c.out
 c.out.tmp
+
+img/

@@ -8,6 +8,7 @@ import (
 )
 
 type ProjectConfig struct {
+	LogLevel                string                   `yaml:"logLevel"`
 	CommonBandwidthPackages []CommonBandwidthPackage `yaml:"commonBandwidthPackages"`
 	AliyunConfig            AliyunConfig             `yaml:"aliyun"`
 	DingTalkConfig          DingTalkConfig           `yaml:"dingTalk"`

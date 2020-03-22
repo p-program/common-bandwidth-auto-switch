@@ -1,3 +1,5 @@
+# 日志级别，支持info，debug。如果是debug，不伸缩，也会把结果推送钉钉
+logLevel: "debug"
 commonBandwidthPackages:
   # 以cbwp ID开头的共享带宽信息
   - id: "cbwp-"

@@ -107,10 +107,12 @@ func (m *Manager) Run() {
 	//无需扩容,也无需缩容
 	onclusion = "无需扩容,也无需缩容"
 	log.Info().Msg(onclusion)
-	// if len(m.dingtalkNotifyToken) > 0 {
-	// 	finalReport.AddConclusion(onclusion)
-	// 	finalReport.ExportToDingTalk(m.dingtalkNotifyToken)
-	// }
+	if e := log.Debug(); e.Enabled() {
+		if len(m.dingtalkNotifyToken) > 0 {
+			finalReport.AddConclusion(onclusion)
+			finalReport.ExportToDingTalk(m.dingtalkNotifyToken)
+		}
+	}
 }
 
 // ScaleUp 扩容:将低带宽EIP加入共享带宽
