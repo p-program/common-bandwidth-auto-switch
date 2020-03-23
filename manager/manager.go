@@ -93,8 +93,8 @@ func (m *Manager) Run() {
 		}
 		return
 	}
-	// 5 Mbps 以内就不优化了，没啥区别
-	if float64(cbpInfo.MinBandwidth)-currentMaxBandwidthRate > 5 {
+	// 如果MinBandwidth是30，MaxBandwidth是70的话，小于（30+70）/2=50Mbps就会触发扩容
+	if currentMaxBandwidthRate < float64((cbpInfo.MinBandwidth+cbpInfo.MaxBandwidth)/2) {
 		onclusion = "带宽低谷，需要扩容"
 		log.Warn().Msg(onclusion)
 		finalReport.AddConclusion(onclusion)
@@ -154,7 +154,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	eipWaitLock.Wait()
 	log.Info().Msgf("eipAvgList:%v", eipAvgList)
 	//根据剩余带宽动态规划
-	bandwidthLimit := m.cbp.MinBandwidth - int(currentBandwidthRate)
+	bandwidthLimit := (cbpInfo.MinBandwidth+cbpInfo.MaxBandwidth)/2 - int(currentBandwidthRate)
 	currentSituation := fmt.Sprintf("剩余可用带宽bandwidthLimit: %v Mbps", bandwidthLimit)
 	log.Info().Msgf(currentSituation)
 	reporter.AddContent(currentSituation)
