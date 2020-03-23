@@ -14,7 +14,7 @@ buildAndRun:
 	GOARCH=$(ARCH) CGO_ENABLED=0 go build
 	./common-bandwidth-auto-switch
 
-mirror:
+mirror: pull
 	docker build -t $(MIRROR_IMAGE) -f deploy/docker/Dockerfile .
 
 pull:
