@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+
+	"github.com/rs/zerolog/log"
 )
 
 // BestPublicIpAddress 应用动态规划,寻求最佳EIP列表
@@ -82,7 +84,7 @@ func (m *BestPublicIpAddress) dynamic() {
 	for i := 1; i <= m.eipsLen; i++ {
 		for j := 1; j < COL; j++ {
 			m.cellsMesh[i][j] = m.maxValue(i, j)
-			// fmt.Printf("m.cellsMesh[%v][%v]: %v \n", i, j, m.cellsMesh[i][j])
+			log.Debug().Msgf("m.cellsMesh[%v][%v]: %v \n", i, j, m.cellsMesh[i][j])
 		}
 	}
 }
