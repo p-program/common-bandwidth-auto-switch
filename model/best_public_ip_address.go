@@ -2,7 +2,6 @@ package model
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 
 	"github.com/rs/zerolog/log"
@@ -69,7 +68,8 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos EipAvgBandwidthInfo
 
 // FindBestWithoutBrain 无脑选择最优解,表示取动态网格最后一行,最后一格
 func (m *BestPublicIpAddress) FindBestWithoutBrain() []EipAvgBandwidthInfo {
-	return m.FindBest(m.eipsLen-1, COL-1)
+	log.Info().Msgf("i:%v ;j:%v;", m.eipsLen, COL-1)
+	return m.FindBest(m.eipsLen, COL-1)
 }
 
 // FindBest 获取动态网格最优解
@@ -88,7 +88,8 @@ func (m *BestPublicIpAddress) dynamic() {
 		}
 	}
 }
-func (m *BestPublicIpAddress) Print() {
+
+func (m *BestPublicIpAddress) print() {
 	for j := 0; j <= m.eipsLen; j++ {
 		// fmt.Printf("%v \n", m.cellsMesh[j])
 		for _, v := range m.cellsMesh[j] {
@@ -97,9 +98,10 @@ func (m *BestPublicIpAddress) Print() {
 				content = "0"
 			}
 			// content = fmt.Sprintf("%s%v", content, v)
-			fmt.Printf("%s%v ", content, v)
+			log.Debug().Msgf("%s%v ", content, v)
+			// fmt.Printf("%s%v ", content, v)
 		}
-		fmt.Print("\n")
+		// fmt.Print("\n")
 	}
 }
 
