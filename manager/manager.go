@@ -215,7 +215,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 				AllocationId: eip.AllocationId,
 				Value:        avgBandwidth,
 			}
-			log.Info().Msgf("eIPBandwidthInfo: IpAddress:%s ;AllocationId:%s ;Value:%v",
+			log.Info().Msgf("eIPBandwidthInfo: IpAddress:%s ;AllocationId:%s ;avgBandwidth(Mbps):%v",
 				eIPBandwidthInfo.IpAddress,
 				eIPBandwidthInfo.AllocationId,
 				eIPBandwidthInfo.Value)
@@ -233,7 +233,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 	bestIPs := bestPublicIpAddress.FindBestWithoutBrain()
 	if len(bestIPs) < 1 {
 		if len(eipAvgList) > 0 {
-			conclusion = "哦吼，你这个程序有 bug 了"
+			conclusion = "结论：你这个程序有 bug 了"
 			log.Warn().Msg(conclusion)
 		} else {
 			conclusion = "结论：没啥好优化的,再见"
