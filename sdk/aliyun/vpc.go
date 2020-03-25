@@ -133,7 +133,7 @@ func (sdk *AliyunSDK) DescribeEipMonitorData(allocationId string, checkFrequency
 	request.Period = "60"
 	now := time.Now()
 	frequency, err := time.ParseDuration(checkFrequency)
-	log.Info().Msgf("duration: %s", frequency.String())
+	// log.Info().Msgf("duration: %s", frequency.String())
 	if err != nil {
 		return nil, err
 	}

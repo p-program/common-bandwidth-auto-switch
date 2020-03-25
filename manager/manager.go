@@ -210,15 +210,21 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 				log.Err(err)
 				return
 			}
-			eipAvgList = append(eipAvgList, model.EipAvgBandwidthInfo{
+			eIPBandwidthInfo := model.EipAvgBandwidthInfo{
 				IpAddress:    eip.IpAddress,
 				AllocationId: eip.AllocationId,
 				Value:        avgBandwidth,
-			})
+			}
+			log.Info().Msgf("eIPBandwidthInfo: IpAddress:%s ;AllocationId:%s ;Value:%v",
+				eIPBandwidthInfo.IpAddress,
+				eIPBandwidthInfo.AllocationId,
+				eIPBandwidthInfo.Value)
+			eipAvgList = append(eipAvgList, eIPBandwidthInfo)
 		}(&eipInfo, &eipWaitLock)
 	}
 	eipWaitLock.Wait()
-	bestPublicIpAddress, err := model.NewBestPublicIpAddress(m.cbp.MinBandwidth, eipAvgList)
+	log.Info().Msgf("len(eipAvgList):%v", len(eipAvgList))
+	bestPublicIpAddress, err := model.NewBestPublicIpAddress(cbpInfo.MinBandwidth, eipAvgList)
 	if err != nil {
 		return err
 	}
