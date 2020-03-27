@@ -84,8 +84,8 @@ func (m *BestPublicIpAddress) dynamic() {
 	for i := 1; i <= m.eipsLen; i++ {
 		for j := 1; j < COL; j++ {
 			m.cellsMesh[i][j] = m.maxValue(i, j)
-			log.Debug().Msgf("m.cellsMesh[%v][%v]: %v", i, j, m.cellsMesh[i][j])
 		}
+		log.Debug().Msgf("m.cellsMesh[%v]: %v", i, m.cellsMesh[i])
 	}
 }
 

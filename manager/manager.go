@@ -125,7 +125,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 		return err
 	}
 	if len(currentUnbindEIPs) < 1 {
-		return fmt.Errorf("len(currentUnbindEIPs)==0")
+		return fmt.Errorf("len(currentUnbindEIPs) == 0")
 	}
 	log.Info().Msgf("len(currentUnbindEIPs):%v;currentUnbindEIPs:%v", len(currentUnbindEIPs), currentUnbindEIPs)
 	for k, v := range currentUnbindEIPs {
@@ -155,7 +155,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	log.Info().Msgf("eipAvgList:%v", eipAvgList)
 	//根据剩余带宽动态规划
 	bandwidthLimit := (cbpInfo.MinBandwidth+cbpInfo.MaxBandwidth)/2 - int(currentBandwidthRate)
-	currentSituation := fmt.Sprintf("剩余可用带宽bandwidthLimit: %v Mbps", bandwidthLimit)
+	currentSituation := fmt.Sprintf("剩余可用带宽 bandwidthLimit: %v Mbps", bandwidthLimit)
 	log.Info().Msgf(currentSituation)
 	reporter.AddContent(currentSituation)
 	bestPublicIpAddress, err := model.NewBestPublicIpAddress(bandwidthLimit, eipAvgList)
