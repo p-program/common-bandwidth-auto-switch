@@ -1,9 +1,13 @@
 package manager
 
 import (
+	"os"
 	"path"
+	"strconv"
 	"testing"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeusro/common-bandwidth-auto-switch/model"
 	"github.com/zeusro/common-bandwidth-auto-switch/sdk/aliyun"
@@ -22,9 +26,15 @@ func TestRun(t *testing.T) {
 	}
 }
 
+func setLog() {
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+}
+
 func TestScaleDown(t *testing.T) {
+	setLog()
 	eipAvgList := []model.EipAvgBandwidthInfo{
-		{"1", "eip-1", float64(0.0869915403168777)},
+		{"", "eip-", float64(0.0869915403168777)},
 		{"", "eip-", float64(0.006793844288793103)},
 		{"", "eip-", float64(0.00014785240436422415)},
 		{"", "eip-", float64(8.065813130345838)},
@@ -71,12 +81,18 @@ func TestScaleDown(t *testing.T) {
 		// {"", "eip-", float64()},
 		// {"", "eip-", float64()},
 	}
-	bestPublicIpAddress, err := model.NewBestPublicIpAddress(40, eipAvgList)
+	for k, _ := range eipAvgList {
+		i_str := strconv.FormatInt(int64(k), 10)
+		eipAvgList[k].AllocationId = "eip-" + i_str
+		eipAvgList[k].IpAddress = i_str
+	}
+	bestPublicIpAddress, err := model.NewBestPublicIpAddress(50, eipAvgList)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
 	bestIPs := bestPublicIpAddress.FindBestWithoutBrain()
+	t.Logf("len(bestIPs):%v", len(bestIPs))
 	t.Log(bestIPs)
 }
 

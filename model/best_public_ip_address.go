@@ -45,14 +45,17 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos EipAvgBandwidthInfo
 	// 初始化动态规划网格
 	cells := [MAX_EIP][COL]float64{}
 	initBandwidth := float64(minBandwidth)
+	//第一列
 	for j := 1; j < COL; j++ {
 		cells[0][j] = float64(initBandwidth)
 		initBandwidth++
 	}
+	log.Debug().Msgf("i:0;value:%v", cells[0])
 	sort.Sort(bandwidthInfos)
 	// fmt.Printf("len(cells): %v ;cap(cells): %v \n", len(cells[1]), cap(cells[1]))
 	for i, v := range bandwidthInfos {
 		//从第二行开始赋值
+		log.Debug().Msgf("i:%v;value:%v", i+1, v)
 		cells[i+1][0] = float64(v.Value)
 	}
 	bestIPs := &BestPublicIpAddress{

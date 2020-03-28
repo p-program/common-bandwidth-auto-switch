@@ -41,7 +41,7 @@ func TestFindBest(t *testing.T) {
 	bestIPs, err := NewBestPublicIpAddress(40, bandwidthInfos)
 	assert.Nil(t, err)
 	best := bestIPs.FindBestWithoutBrain()
-	bestIPs.Print()
+	bestIPs.print()
 	t.Logf("len(best):%v", len(best))
 	for j := 0; j < len(best); j++ {
 		t.Logf("%v \n", best[j])
@@ -62,7 +62,7 @@ func prepareEipAvgBandwidthInfos1() []EipAvgBandwidthInfo {
 
 func prepareEipAvgBandwidthInfos2() []EipAvgBandwidthInfo {
 	bandwidthInfos := []EipAvgBandwidthInfo{
-		EipAvgBandwidthInfo{"1.1.1.1", "a", float64(21)},
+		EipAvgBandwidthInfo{"1.1.1.1", "", float64(21)},
 		EipAvgBandwidthInfo{"1.1.1.2", "", float64(20)},
 		EipAvgBandwidthInfo{"1.1.1.3", "", float64(31)},
 	}
