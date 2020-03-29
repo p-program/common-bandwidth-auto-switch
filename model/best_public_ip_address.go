@@ -8,6 +8,14 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	NEW_LINE = "\n"
+	// COL 一维边界
+	COL = 11
+	// MAX_EIP 二维边界，最大EIP检测数据，尽量不要用这个初始化
+	MAX_EIP = 102
+)
+
 // BestPublicIpAddress 应用动态规划,寻求最佳EIP列表
 // 参考：
 // golang实现动态规划算法(背包问题) https://blog.csdn.net/runbat/article/details/94016554
@@ -25,13 +33,6 @@ type BestPublicIpAddress struct {
 	eipsLen int
 }
 
-const (
-	// COL 一维边界
-	COL = 11
-	// MAX_EIP 二维边界，最大EIP检测数据，尽量不要用这个初始化
-	MAX_EIP = 102
-)
-
 // NewBestPublicIpAddress 实例化动态规划
 func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos EipAvgBandwidthInfos) (*BestPublicIpAddress, error) {
 	eipsLen := len(bandwidthInfos)
@@ -46,7 +47,12 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos EipAvgBandwidthInfo
 	// 初始化动态规划网格
 	cells := [MAX_EIP][COL]float64{}
 	initBandwidth := float64(minBandwidth)
-	//第一列
+	bestIPs := &BestPublicIpAddress{
+		minBandwidth: minBandwidth,
+		maxBandwidth: minBandwidth + COL,
+		eipsLen:      eipsLen,
+	}
+	//第一行
 	for j := 1; j < COL; j++ {
 		cells[0][j] = float64(initBandwidth)
 		initBandwidth++
@@ -57,15 +63,11 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos EipAvgBandwidthInfo
 	for i, v := range bandwidthInfos {
 		//从第二行开始赋值
 		log.Debug().Msgf("i:%v;value:%v", i+1, v)
+		bestIPs.cellsMeshPointer[i+1][0] = []EipAvgBandwidthInfo{v}
 		cells[i+1][0] = float64(v.Value)
 	}
-	bestIPs := &BestPublicIpAddress{
-		minBandwidth: minBandwidth,
-		maxBandwidth: minBandwidth + COL,
-		origin:       bandwidthInfos,
-		eipsLen:      eipsLen,
-		cellsMesh:    cells,
-	}
+	bestIPs.origin = bandwidthInfos
+	bestIPs.cellsMesh = cells
 	// fmt.Printf("len(cells): %v ;cap(cells): %v \n", len(bestIPs.cellsMesh[1]), cap(bestIPs.cellsMesh[1]))
 	return bestIPs, nil
 }
@@ -92,10 +94,6 @@ func (m *BestPublicIpAddress) dynamic() {
 		log.Debug().Msgf("m.cellsMesh[%v]: %v", i, m.cellsMesh[i])
 	}
 }
-
-const (
-	NEW_LINE = "\n"
-)
 
 func (m *BestPublicIpAddress) print() {
 	cellsMeshContents := NEW_LINE
@@ -124,7 +122,7 @@ func (m *BestPublicIpAddress) maxValue(i, j int) float64 {
 	currentEIP := m.origin[i-1]
 	currentEIPBandwidth := currentEIP.Value
 	bandwidthLimit := m.cellsMesh[0][j]
-	// fmt.Printf("i: %v ; j: %v ;currentEIPBandwidth: %v ;bandwidthLimit: %v ;", i, j, currentEIPBandwidth, bandwidthLimit)
+	log.Debug().Msgf("i: %v ; j: %v ;currentEIPBandwidth: %v ;bandwidthLimit: %v ;", i, j, currentEIPBandwidth, bandwidthLimit)
 	// 当前EIP超过带宽限制
 	if currentEIPBandwidth > bandwidthLimit {
 		return lastColumnCell
