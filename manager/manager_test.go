@@ -1,13 +1,21 @@
 package manager
 
 import (
+	"os"
 	"path"
 	"testing"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeusro/common-bandwidth-auto-switch/model"
 	"github.com/zeusro/common-bandwidth-auto-switch/sdk/aliyun"
 )
+
+func init() {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+}
 
 func TestRun(t *testing.T) {
 	cfg := prepareConfing(t)
@@ -29,7 +37,7 @@ func prepareSDK(config *model.ProjectConfig) *aliyun.AliyunSDK {
 
 func prepareConfing(t *testing.T) *model.ProjectConfig {
 	config := model.NewProjectConfig()
-	path := path.Join("../", "config.yaml")
+	path := path.Join("../", "config", "config.yaml")
 	err := config.LoadYAML(path)
 	assert.Nil(t, err)
 	return config

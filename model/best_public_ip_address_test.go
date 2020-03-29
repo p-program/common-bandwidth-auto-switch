@@ -19,8 +19,9 @@ func TestDynamic1(t *testing.T) {
 	bandwidthInfos := prepareEipAvgBandwidthInfos1()
 	bestIPs, err := NewBestPublicIpAddress(40, bandwidthInfos)
 	assert.Nil(t, err)
-	bestIPs.dynamic()
-	bestIPs.print()
+	//最优解： 21 + 20
+	best := bestIPs.FindBestWithoutBrain()
+	t.Log(best)
 }
 
 /*
@@ -41,7 +42,7 @@ func TestFindBest(t *testing.T) {
 	bestIPs, err := NewBestPublicIpAddress(40, bandwidthInfos)
 	assert.Nil(t, err)
 	best := bestIPs.FindBestWithoutBrain()
-	bestIPs.Print()
+	bestIPs.print()
 	t.Logf("len(best):%v", len(best))
 	for j := 0; j < len(best); j++ {
 		t.Logf("%v \n", best[j])
