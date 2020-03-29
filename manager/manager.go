@@ -80,13 +80,13 @@ func (m *Manager) Run() {
 	if len(errs) > 0 {
 		log.Debug().Errs("goroutine get rate err", []error{err1, err2})
 	}
-	var onclusion string
+	var conclusion string
 	// 当前共享带宽最大带宽速率,单位是Mbps
 	currentMaxBandwidthRate := math.Max(rxDataPoint.Value, txDataPoint.Value)
 	if currentMaxBandwidthRate > float64(cbpInfo.MaxBandwidth) {
-		onclusion = "带宽高峰，需要缩容"
-		log.Warn().Msg(onclusion)
-		finalReport.AddConclusion(onclusion)
+		conclusion = "带宽高峰，需要缩容"
+		log.Warn().Msg(conclusion)
+		finalReport.AddConclusion(conclusion)
 		err := m.ScaleDown(currentMaxBandwidthRate, finalReport)
 		if err != nil {
 			log.Err(err)
@@ -95,9 +95,9 @@ func (m *Manager) Run() {
 	}
 	// 如果MinBandwidth是30，MaxBandwidth是70的话，小于（30+70）/2=50Mbps就会触发扩容
 	if currentMaxBandwidthRate < float64((cbpInfo.MinBandwidth+cbpInfo.MaxBandwidth)/2) {
-		onclusion = "带宽低谷，需要扩容"
-		log.Warn().Msg(onclusion)
-		finalReport.AddConclusion(onclusion)
+		conclusion = "带宽低谷，需要扩容"
+		log.Warn().Msg(conclusion)
+		finalReport.AddConclusion(conclusion)
 		err := m.ScaleUp(currentMaxBandwidthRate, finalReport)
 		if err != nil {
 			log.Err(err)
@@ -105,11 +105,11 @@ func (m *Manager) Run() {
 		return
 	}
 	//无需扩容,也无需缩容
-	onclusion = "无需扩容,也无需缩容"
-	log.Info().Msg(onclusion)
+	conclusion = "无需扩容,也无需缩容"
+	log.Info().Msg(conclusion)
 	if e := log.Debug(); e.Enabled() {
 		if len(m.dingtalkNotifyToken) > 0 {
-			finalReport.AddConclusion(onclusion)
+			finalReport.AddConclusion(conclusion)
 			finalReport.ExportToDingTalk(m.dingtalkNotifyToken)
 		}
 	}
@@ -125,7 +125,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 		return err
 	}
 	if len(currentUnbindEIPs) < 1 {
-		return fmt.Errorf("len(currentUnbindEIPs)==0")
+		return fmt.Errorf("len(currentUnbindEIPs) == 0")
 	}
 	log.Info().Msgf("len(currentUnbindEIPs):%v;currentUnbindEIPs:%v", len(currentUnbindEIPs), currentUnbindEIPs)
 	for k, v := range currentUnbindEIPs {
@@ -155,7 +155,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	log.Info().Msgf("eipAvgList:%v", eipAvgList)
 	//根据剩余带宽动态规划
 	bandwidthLimit := (cbpInfo.MinBandwidth+cbpInfo.MaxBandwidth)/2 - int(currentBandwidthRate)
-	currentSituation := fmt.Sprintf("剩余可用带宽bandwidthLimit: %v Mbps", bandwidthLimit)
+	currentSituation := fmt.Sprintf("剩余可用带宽 bandwidthLimit: %v Mbps", bandwidthLimit)
 	log.Info().Msgf(currentSituation)
 	reporter.AddContent(currentSituation)
 	bestPublicIpAddress, err := model.NewBestPublicIpAddress(bandwidthLimit, eipAvgList)
@@ -202,7 +202,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 	checkFrequency := cbpInfo.CheckFrequency
 	var eipAvgList []model.EipAvgBandwidthInfo
 	for _, eipInfo := range eipList {
-		go func(eip *vpc.PublicIpAddresse, wg *sync.WaitGroup) {
+		go func(eip vpc.PublicIpAddresse, wg *sync.WaitGroup) {
 			defer wg.Done()
 			avgBandwidth, err := m.sdk.DescribeEipAvgMonitorData(eip.AllocationId, checkFrequency)
 			//FIXME: 局部失败要怎么处理
@@ -210,24 +210,37 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 				log.Err(err)
 				return
 			}
-			eipAvgList = append(eipAvgList, model.EipAvgBandwidthInfo{
+			eIPBandwidthInfo := model.EipAvgBandwidthInfo{
 				IpAddress:    eip.IpAddress,
 				AllocationId: eip.AllocationId,
 				Value:        avgBandwidth,
-			})
-		}(&eipInfo, &eipWaitLock)
+			}
+			log.Info().Msgf("eIPBandwidthInfo: IpAddress:%s ;AllocationId:%s ;avgBandwidth(Mbps):%v",
+				eIPBandwidthInfo.IpAddress,
+				eIPBandwidthInfo.AllocationId,
+				eIPBandwidthInfo.Value)
+			eipAvgList = append(eipAvgList, eIPBandwidthInfo)
+		}(eipInfo, &eipWaitLock)
 	}
 	eipWaitLock.Wait()
-	bestPublicIpAddress, err := model.NewBestPublicIpAddress(m.cbp.MinBandwidth, eipAvgList)
+	log.Info().Msgf("len(eipAvgList):%v", len(eipAvgList))
+	bestPublicIpAddress, err := model.NewBestPublicIpAddress(cbpInfo.MinBandwidth, eipAvgList)
 	if err != nil {
 		return err
 	}
+	var conclusion string
 	//进行动态优化
 	bestIPs := bestPublicIpAddress.FindBestWithoutBrain()
 	if len(bestIPs) < 1 {
-		step := "没啥好优化的,再见"
-		log.Info().Msg(step)
-		reporter.AddStep(step)
+		if len(eipAvgList) > 0 {
+			conclusion = "结论：你这个程序有 bug 了"
+			log.Warn().Msg(conclusion)
+		} else {
+			conclusion = "结论：没啥好优化的,再见"
+			log.Info().Msg(conclusion)
+		}
+		reporter.AddStep(conclusion)
+		reporter.ExportToDingTalk(m.dingtalkNotifyToken)
 		return nil
 	}
 	currentEIPsInCBWP, err := m.sdk.GetCurrentEipAddressesInCBWP(cbpInfo.ID)

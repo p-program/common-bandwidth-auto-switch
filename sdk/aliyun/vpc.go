@@ -114,6 +114,7 @@ func (sdk *AliyunSDK) DescribeEipAvgMonitorData(allocationId string, checkFreque
 	}
 	var sum float64 = 0
 	for _, data := range datas {
+		// EipFlow = 流入和流出的带宽总和
 		// EipBandwidth 带宽值，该值等于EipFlow/60，单位为B/S
 		sum += float64(data.EipBandwidth)
 	}
@@ -133,7 +134,7 @@ func (sdk *AliyunSDK) DescribeEipMonitorData(allocationId string, checkFrequency
 	request.Period = "60"
 	now := time.Now()
 	frequency, err := time.ParseDuration(checkFrequency)
-	log.Info().Msgf("duration: %s", frequency.String())
+	// log.Info().Msgf("duration: %s", frequency.String())
 	if err != nil {
 		return nil, err
 	}

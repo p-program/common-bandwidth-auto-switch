@@ -63,7 +63,7 @@ func prepareEipAvgBandwidthInfos1() []EipAvgBandwidthInfo {
 
 func prepareEipAvgBandwidthInfos2() []EipAvgBandwidthInfo {
 	bandwidthInfos := []EipAvgBandwidthInfo{
-		EipAvgBandwidthInfo{"1.1.1.1", "a", float64(21)},
+		EipAvgBandwidthInfo{"1.1.1.1", "", float64(21)},
 		EipAvgBandwidthInfo{"1.1.1.2", "", float64(20)},
 		EipAvgBandwidthInfo{"1.1.1.3", "", float64(31)},
 	}
