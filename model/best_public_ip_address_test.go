@@ -1,10 +1,18 @@
 package model
 
 import (
+	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+}
 
 /*
 00 40 41 42 43 44 45 46 47 48 49
@@ -17,11 +25,12 @@ import (
 */
 func TestDynamic1(t *testing.T) {
 	bandwidthInfos := prepareEipAvgBandwidthInfos1()
-	bestIPs, err := NewBestPublicIpAddress(40, bandwidthInfos)
+	findBestPolicy, err := NewBestPublicIpAddress(40, bandwidthInfos)
 	assert.Nil(t, err)
 	//最优解： 21 + 20
-	best := bestIPs.FindBestWithoutBrain()
+	best := findBestPolicy.FindBestWithoutBrain()
 	t.Log(best)
+	findBestPolicy.print()
 }
 
 /*

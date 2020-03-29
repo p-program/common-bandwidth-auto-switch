@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/rs/zerolog/log"
@@ -92,20 +93,29 @@ func (m *BestPublicIpAddress) dynamic() {
 	}
 }
 
+const (
+	NEW_LINE = "\n"
+)
+
 func (m *BestPublicIpAddress) print() {
+	cellsMeshContents := NEW_LINE
+	cellsMeshPointerContents := NEW_LINE
 	for j := 0; j <= m.eipsLen; j++ {
-		// fmt.Printf("%v \n", m.cellsMesh[j])
-		for _, v := range m.cellsMesh[j] {
-			content := ""
+		for k, v := range m.cellsMesh[j] {
+			cellsMeshContent := ""
 			if v < float64(10) {
-				content = "0"
+				// 长度不高，用+=可以接受
+				cellsMeshContent = "0"
 			}
-			// content = fmt.Sprintf("%s%v", content, v)
-			log.Debug().Msgf("%s%v ", content, v)
-			// fmt.Printf("%s%v ", content, v)
+			cellsMeshContent = fmt.Sprintf("%s%v ", cellsMeshContent, v)
+			cellsMeshContents += cellsMeshContent
+			cellsMeshPointerContents += fmt.Sprintf("%d ", len(m.cellsMeshPointer[j][k]))
 		}
-		// fmt.Print("\n")
+		cellsMeshContents += NEW_LINE
+		cellsMeshPointerContents += NEW_LINE
 	}
+	log.Debug().Msgf("cellsMesh: %s%s", cellsMeshContents, NEW_LINE)
+	log.Debug().Msgf("len(cellsMeshPointer): %s%s", cellsMeshPointerContents, NEW_LINE)
 }
 
 // 局部最优解,只是近似最优解，不是最优解
@@ -130,9 +140,8 @@ func (m *BestPublicIpAddress) maxValue(i, j int) float64 {
 	// 剩余带宽=当前带宽上限-当前EIP的带宽
 	// 剩余带宽足够容纳当前EIP+之前的IP
 	remainingBandwidth := bandwidthLimit - currentEIPBandwidth
-	log.Info().Msgf("remainingBandwidth: %v", remainingBandwidth)
 	currentCellBandwidth := currentEIPBandwidth
-	log.Info().Msgf("currentCellBandwidth: %v", currentCellBandwidth)
+	log.Info().Msgf("remainingBandwidth: %v;currentCellBandwidth: %v", remainingBandwidth, currentCellBandwidth)
 	hasRemain := false
 	//FIXME:从先前的元素中排列组合，求满足条件的最大值
 	// 从上一行最后一列开始倒序
@@ -143,10 +152,15 @@ func (m *BestPublicIpAddress) maxValue(i, j int) float64 {
 		if remainingBandwidth >= last {
 			currentCellBandwidth += last
 			for _, v := range lastPointer {
+				log.Debug().Msgf("object in lastPointer : %v", v)
 				mark = append(mark, v)
 			}
 			hasRemain = true
 			m.cellsMeshPointer[i][j] = mark
+			log.Debug().Msgf("i-1: %v ;k: %v ;currentCellBandwidth: %v",
+				i-1,
+				k,
+				currentCellBandwidth)
 			return currentCellBandwidth
 		}
 	}
