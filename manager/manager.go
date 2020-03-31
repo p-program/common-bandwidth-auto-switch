@@ -256,26 +256,21 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 	var lowestEIPs []model.EipAvgBandwidthInfo
 	var lowestEIPsAddress []string
 	//求差集. currentEIPsInCBWP - bestIPs
-	for i1 := 0; i1 < len(bestIPs); i1++ {
-		bestIP := bestIPs[i1]
-		isCross := false
-		var ip vpc.EipAddress
-		for i2 := 0; i2 < len(currentEIPsInCBWP); i2++ {
-			ip = currentEIPsInCBWP[i2]
-			if bestIP.AllocationId == ip.AllocationId {
-				isCross = true
-				break
-			}
-		}
+	bestIPMap := make(map[string]bool, 0)
+	for _, ip := range bestIPs {
+		// log.Info().Msgf("ip.AllocationId:%s", ip.AllocationId)
+		bestIPMap[ip.AllocationId] = true
+	}
+	for _, currentIP := range currentEIPsInCBWP {
 		//没交集,可加
-		if !isCross {
+		if contains, _ := bestIPMap[currentIP.AllocationId]; !contains {
 			entity := model.EipAvgBandwidthInfo{
-				IpAddress:    ip.IpAddress,
-				AllocationId: ip.AllocationId,
+				IpAddress:    currentIP.IpAddress,
+				AllocationId: currentIP.AllocationId,
 			}
 			lowestEIPs = append(lowestEIPs, entity)
 			reporter.AddContent(fmt.Sprintf(REMOVE_EIP_TEMPLATE, entity.AllocationId, entity.IpAddress))
-			lowestEIPsAddress = append(lowestEIPsAddress, ip.AllocationId)
+			lowestEIPsAddress = append(lowestEIPsAddress, currentIP.AllocationId)
 		}
 	}
 	log.Debug().Msgf("lowestEIPs:%v", lowestEIPs)

@@ -86,20 +86,20 @@ func (sdk *AliyunSDK) RemoveCommonBandwidthPackageIps(bandwidthPackageId string,
 	request.Scheme = "https"
 	request.RegionId = sdk.config.Region
 	request.BandwidthPackageId = bandwidthPackageId
+	//  并发删除会报错
 	var wg sync.WaitGroup
+	wg.Add(len(ipInstanceIds))
 	for _, ipInstanceID := range ipInstanceIds {
 		//这里传复制，防止出错
-		go func(r vpc.RemoveCommonBandwidthPackageIpRequest, eipID string, w *sync.WaitGroup) {
-			wg.Add(1)
+		go func(c vpc.Client, r vpc.RemoveCommonBandwidthPackageIpRequest, eipID string, w *sync.WaitGroup) {
 			//无论失败与否都解除占用
-			defer wg.Done()
+			defer w.Done()
 			r.IpInstanceId = eipID
-			_, err := client.RemoveCommonBandwidthPackageIp(request)
+			_, err := c.RemoveCommonBandwidthPackageIp(&r)
 			if err != nil {
 				log.Err(err)
 			}
-
-		}(*request, ipInstanceID, &wg)
+		}(*client, *request, ipInstanceID, &wg)
 	}
 	wg.Wait()
 }

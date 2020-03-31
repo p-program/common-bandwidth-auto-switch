@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 }
 
@@ -31,13 +31,7 @@ func TestRun(t *testing.T) {
 	}
 }
 
-func setLog() {
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-}
-
 func TestScaleDown(t *testing.T) {
-	setLog()
 	eipAvgList := []model.EipAvgBandwidthInfo{
 		{"", "eip-", float64(0.0869915403168777)},
 		{"", "eip-", float64(0.006793844288793103)},
