@@ -74,8 +74,9 @@ func NewBestPublicIpAddress(minBandwidth int, bandwidthInfos EipAvgBandwidthInfo
 
 // FindBestWithoutBrain 无脑选择最优解,表示取动态网格最后一行,最后一格
 func (m *BestPublicIpAddress) FindBestWithoutBrain() []EipAvgBandwidthInfo {
-	log.Info().Msgf("最终决策 i:%v;j:%v;", m.eipsLen, COL-1)
-	return m.FindBest(m.eipsLen, COL-1)
+	list := m.FindBest(m.eipsLen, COL-1)
+	log.Info().Msgf("最终决策 i: %v;j: %v;len(list): %v ;list: %v", m.eipsLen, COL-1, len(list), list)
+	return list
 }
 
 // FindBest 获取动态网格最优解

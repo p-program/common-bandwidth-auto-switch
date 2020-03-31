@@ -30,9 +30,9 @@
 
 当前共享带宽 < 期望值（(maxBandwidth+minBandwidth)/2）时,自动把高带宽的EIP添加入共享带宽
 
-核心算法是`动态规划`，为了尽可能地减少添加/移除 EIP带来的网络抖动，EIP在规划的时候按照带宽升序排列,按照动态规划的严格定义的话，其实所得并非最优解。
+核心算法是`动态规划`。
 
-而且，在带宽达到均衡态之后，你就会发现这个程序一点卵用都没有，基本不会触发什么伸缩。
+带宽达到均衡态之后，你就会发现这个程序一点卵用都没有，基本不会触发什么伸缩。
 
 ![](/img/fly.jpg)
 
@@ -64,7 +64,6 @@ DescribeMetricList
 1. AliyunEIPFullAccess
 1. AliyunCloudMonitorFullAccess
 1. AliyunCommonBandwidthPackageFullAccess
-
 
 ### 配置文件
 

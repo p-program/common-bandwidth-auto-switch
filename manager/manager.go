@@ -234,6 +234,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 	var conclusion string
 	//进行动态优化
 	bestIPs := bestPublicIpAddress.FindBestWithoutBrain()
+	//bug 检查
 	if len(bestIPs) < 1 {
 		if len(eipAvgList) > 0 {
 			conclusion = "结论：你这个程序有 bug 了"
@@ -247,6 +248,8 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 		return nil
 	}
 	currentEIPsInCBWP, err := m.sdk.GetCurrentEipAddressesInCBWP(cbpInfo.ID)
+	log.Debug().Msgf("currentEIPsInCBWP:%v", currentEIPsInCBWP)
+	log.Info().Msgf("len(currentEIPsInCBWP): %v", len(currentEIPsInCBWP))
 	if err != nil {
 		return err
 	}
