@@ -210,6 +210,9 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 				log.Err(err)
 				return
 			}
+			if avgBandwidth > float64(cbpInfo.MinBandwidth) {
+				return
+			}
 			eIPBandwidthInfo := model.EipAvgBandwidthInfo{
 				IpAddress:    eip.IpAddress,
 				AllocationId: eip.AllocationId,

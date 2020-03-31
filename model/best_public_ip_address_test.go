@@ -41,9 +41,10 @@ func TestDynamic1(t *testing.T) {
 */
 func TestDynamic2(t *testing.T) {
 	bandwidthInfos := prepareEipAvgBandwidthInfos2()
-	bestIPs, err := NewBestPublicIpAddress(40, bandwidthInfos)
+	findBestPolicy, err := NewBestPublicIpAddress(40, bandwidthInfos)
 	assert.Nil(t, err)
-	bestIPs.dynamic()
+	findBestPolicy.dynamic()
+	findBestPolicy.print()
 }
 
 func TestFindBest(t *testing.T) {

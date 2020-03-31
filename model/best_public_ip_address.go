@@ -142,23 +142,25 @@ func (m *BestPublicIpAddress) maxValue(i, j int) float64 {
 	hasRemain := false
 	//FIXME:从先前的元素中排列组合，求满足条件的最大值
 	// 从上一行最后一列开始倒序
-	for k := COL - 1; k >= 0; k-- {
-		last := m.cellsMesh[i-1][k]
-		lastPointer := m.cellsMeshPointer[i-1][k]
-		//剩余带宽刚好能融入上一行的EIP的带宽
-		if remainingBandwidth >= last {
-			currentEIPBandwidth += last
-			for _, v := range lastPointer {
-				log.Debug().Msgf("object in lastPointer : %v", v)
-				mark = append(mark, v)
+	for h := i - 1; h >= 0; h-- {
+		for k := COL - 1; k >= 0; k-- {
+			lastBandwidth := m.cellsMesh[h][k]
+			lastPointer := m.cellsMeshPointer[h][k]
+			//剩余带宽刚好能融入上一行的EIP的带宽
+			if remainingBandwidth >= lastBandwidth {
+				hasRemain = true
+				currentEIPBandwidth += lastBandwidth
+				for _, v := range lastPointer {
+					log.Debug().Msgf("object in lastPointer : %v", v)
+					mark = append(mark, v)
+				}
+				m.cellsMeshPointer[i][j] = mark
+				log.Debug().Msgf("h: %v ;k: %v ;currentCellBandwidth: %v",
+					h,
+					k,
+					currentEIPBandwidth)
+				return currentEIPBandwidth
 			}
-			hasRemain = true
-			m.cellsMeshPointer[i][j] = mark
-			log.Debug().Msgf("i-1: %v ;k: %v ;currentCellBandwidth: %v",
-				i-1,
-				k,
-				currentEIPBandwidth)
-			return currentEIPBandwidth
 		}
 	}
 	// 剩余带宽不够支持
