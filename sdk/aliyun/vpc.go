@@ -81,25 +81,24 @@ func (sdk *AliyunSDK) RemoveCommonBandwidthPackageIp(bandwidthPackageId string, 
 
 // RemoveCommonBandwidthPackageIps 复用 VPC client ，并行删除EIP
 func (sdk *AliyunSDK) RemoveCommonBandwidthPackageIps(bandwidthPackageId string, ipInstanceIds []string) {
-	client := sdk.GetVPCClient()
-	request := vpc.CreateRemoveCommonBandwidthPackageIpRequest()
-	request.Scheme = "https"
-	request.RegionId = sdk.config.Region
-	request.BandwidthPackageId = bandwidthPackageId
 	//  并发删除会报错
 	var wg sync.WaitGroup
 	wg.Add(len(ipInstanceIds))
 	for _, ipInstanceID := range ipInstanceIds {
-		//这里传复制，防止出错
-		go func(c vpc.Client, r vpc.RemoveCommonBandwidthPackageIpRequest, eipID string, w *sync.WaitGroup) {
-			//无论失败与否都解除占用
+		go func(w *sync.WaitGroup, eipID string) {
+			// fail or not ，just do it !
 			defer w.Done()
-			r.IpInstanceId = eipID
-			_, err := c.RemoveCommonBandwidthPackageIp(&r)
+			client := sdk.GetVPCClient()
+			request := vpc.CreateRemoveCommonBandwidthPackageIpRequest()
+			request.Scheme = "https"
+			request.RegionId = sdk.config.Region
+			request.BandwidthPackageId = bandwidthPackageId
+			request.IpInstanceId = eipID
+			_, err := client.RemoveCommonBandwidthPackageIp(request)
 			if err != nil {
 				log.Err(err)
 			}
-		}(*client, *request, ipInstanceID, &wg)
+		}(&wg, ipInstanceID)
 	}
 	wg.Wait()
 }
