@@ -139,7 +139,7 @@ func (m *BestPublicIpAddress) maxValue(i, j int) float64 {
 	// 剩余带宽=当前带宽上限-当前EIP的带宽
 	// 剩余带宽足够容纳当前EIP+之前的IP
 	remainingBandwidth := bandwidthLimit - currentEIPBandwidth
-	log.Info().Msgf("remainingBandwidth: %v;currentCellBandwidth: %v", remainingBandwidth, currentEIPBandwidth)
+	log.Info().Msgf("remainingBandwidth: %v ; currentCellBandwidth: %v", remainingBandwidth, currentEIPBandwidth)
 	hasRemain := false
 	//FIXME:从先前的元素中排列组合，求满足条件的最大值
 	// 从上一行最后一列开始倒序

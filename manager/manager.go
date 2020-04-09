@@ -81,8 +81,10 @@ func (m *Manager) Run() {
 		log.Debug().Errs("goroutine get rate err", []error{err1, err2})
 	}
 	var conclusion string
+	//FIXME: 流入和流入带宽相差过大，要怎么处理 ？
 	// 当前共享带宽最大带宽速率,单位是Mbps
 	currentMaxBandwidthRate := math.Max(rxDataPoint.Value, txDataPoint.Value)
+	log.Info().Msgf("currentMaxBandwidthRate: %v", currentMaxBandwidthRate)
 	if currentMaxBandwidthRate > float64(cbpInfo.MaxBandwidth) {
 		conclusion = "带宽高峰，需要缩容"
 		log.Warn().Msg(conclusion)
@@ -129,7 +131,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	}
 	log.Info().Msgf("len(currentUnbindEIPs):%v;currentUnbindEIPs:%v", len(currentUnbindEIPs), currentUnbindEIPs)
 	for k, v := range currentUnbindEIPs {
-		log.Info().Msgf("currentUnbindEIPs[%v] ;EIP: %s ;EIPID: %s", k, v.IpAddress, v.AllocationId)
+		log.Info().Msgf("currentUnbindEIPs[%v] ;EIP: %s ;EIPID: %s ;", k, v.IpAddress, v.AllocationId)
 	}
 	var eipWaitLock sync.WaitGroup
 	checkFrequency := cbpInfo.CheckFrequency
@@ -149,6 +151,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 				AllocationId: eip.AllocationId,
 				Value:        avgBandwidth,
 			})
+			log.Info().Msgf("IpAddress: %s ;AllocationId: %s ; avgBandwidth: %v Mbps ;", eip.IpAddress, eip.AllocationId, avgBandwidth)
 		}(eipInfo, &eipWaitLock)
 	}
 	eipWaitLock.Wait()
@@ -175,7 +178,9 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	}
 	if !m.dryRun {
 		for _, eipInfo := range bestEIPs {
-			reporter.AddContent(fmt.Sprintf(ADD_EIP_TEMPLATE, eipInfo.AllocationId, eipInfo.IpAddress))
+			msg := fmt.Sprintf(ADD_EIP_TEMPLATE, eipInfo.AllocationId, eipInfo.IpAddress)
+			fmt.Println(msg)
+			reporter.AddContent(msg)
 			m.sdk.AddCommonBandwidthPackageIp(cbpInfo.ID, eipInfo.AllocationId)
 		}
 	}
