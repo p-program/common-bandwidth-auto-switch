@@ -3,7 +3,6 @@ package manager
 import (
 	"errors"
 	"fmt"
-	"math"
 	"sync"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
@@ -13,8 +12,8 @@ import (
 )
 
 const (
-	ADD_EIP_TEMPLATE    = "添加EIP: %s ;\n\nIP: %s "
-	REMOVE_EIP_TEMPLATE = "删除EIP: %s ;\n\nIP: %s "
+	ADD_EIP_TEMPLATE    = "添加EIP: %s \n\n"
+	REMOVE_EIP_TEMPLATE = "删除EIP: %s \n\n"
 )
 
 // Manager 控制终端
@@ -65,9 +64,9 @@ func (m *Manager) Run() {
 	cbpInfo := m.cbp
 	finalReport := NewManagerReporter(cbpInfo)
 	currentCBWP := fmt.Sprintf("当前共享带宽实例: %s", cbpInfo.ID)
-	currentCBWPIn := fmt.Sprintf("平均流入带宽: %v Mbps;", rxDataPoint.Value)
+	currentCBWPIn := fmt.Sprintf("平均流入带宽: %v Mbps", rxDataPoint.Value)
 	finalReport.AddContent(currentCBWPIn)
-	currentCBWPOut := fmt.Sprintf("平均流出带宽: %v Mbps;", txDataPoint.Value)
+	currentCBWPOut := fmt.Sprintf("平均流出带宽: %v Mbps", txDataPoint.Value)
 	finalReport.AddContent(currentCBWPOut)
 	log.Info().Msg(currentCBWP + currentCBWPIn + currentCBWPOut)
 	errs := make([]error, 2)
@@ -81,9 +80,9 @@ func (m *Manager) Run() {
 		log.Debug().Errs("goroutine get rate err", []error{err1, err2})
 	}
 	var conclusion string
-	//FIXME: 流入和流入带宽相差过大，要怎么处理 ？
 	// 当前共享带宽最大带宽速率,单位是Mbps
-	currentMaxBandwidthRate := math.Max(rxDataPoint.Value, txDataPoint.Value)
+	// 流出带宽计费，流入带宽不计费，所以这里取流出带宽
+	currentMaxBandwidthRate := txDataPoint.Value
 	log.Info().Msgf("currentMaxBandwidthRate: %v", currentMaxBandwidthRate)
 	if currentMaxBandwidthRate > float64(cbpInfo.MaxBandwidth) {
 		conclusion = "带宽高峰，需要缩容"
@@ -121,7 +120,6 @@ func (m *Manager) Run() {
 func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporter) (err error) {
 	cbpInfo := m.cbp
 	cbwpID := cbpInfo.ID
-	//获取当前 region 下未绑定共享带宽的IP列表
 	currentUnbindEIPs, err := m.sdk.GetCurrentEipAddressesExceptCBWP(cbwpID)
 	if err != nil {
 		return err
@@ -140,7 +138,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	for _, eipInfo := range currentUnbindEIPs {
 		go func(eip vpc.EipAddress, wg *sync.WaitGroup) {
 			defer wg.Done()
-			avgBandwidth, err := m.sdk.DescribeEipAvgMonitorData(eip.AllocationId, checkFrequency)
+			avgOutBandwidth, err := m.sdk.DescribeEipAvgMonitorData(eip.AllocationId, checkFrequency)
 			//FIXME: 局部失败要怎么处理
 			if err != nil {
 				log.Err(err)
@@ -149,16 +147,16 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 			eipAvgList = append(eipAvgList, model.EipAvgBandwidthInfo{
 				IpAddress:    eip.IpAddress,
 				AllocationId: eip.AllocationId,
-				Value:        avgBandwidth,
+				Value:        avgOutBandwidth,
 			})
-			log.Info().Msgf("IpAddress: %s ;AllocationId: %s ; avgBandwidth: %v Mbps ;", eip.IpAddress, eip.AllocationId, avgBandwidth)
+			log.Info().Msgf("IpAddress: %s ;AllocationId: %s ; avgBandwidth: %v Mbps ;", eip.IpAddress, eip.AllocationId, avgOutBandwidth)
 		}(eipInfo, &eipWaitLock)
 	}
 	eipWaitLock.Wait()
 	log.Info().Msgf("eipAvgList:%v", eipAvgList)
 	//根据剩余带宽动态规划
 	bandwidthLimit := (cbpInfo.MinBandwidth+cbpInfo.MaxBandwidth)/2 - int(currentBandwidthRate)
-	currentSituation := fmt.Sprintf("剩余可用带宽 bandwidthLimit: %v Mbps", bandwidthLimit)
+	currentSituation := fmt.Sprintf("剩余可用带宽: %v Mbps", bandwidthLimit)
 	log.Info().Msgf(currentSituation)
 	reporter.AddContent(currentSituation)
 	bestPublicIpAddress, err := model.NewBestPublicIpAddress(bandwidthLimit, eipAvgList)
@@ -178,7 +176,7 @@ func (m *Manager) ScaleUp(currentBandwidthRate float64, reporter *ManagerReporte
 	}
 	if !m.dryRun {
 		for _, eipInfo := range bestEIPs {
-			msg := fmt.Sprintf(ADD_EIP_TEMPLATE, eipInfo.AllocationId, eipInfo.IpAddress)
+			msg := fmt.Sprintf(ADD_EIP_TEMPLATE, eipInfo.IpAddress)
 			fmt.Println(msg)
 			reporter.AddContent(msg)
 			m.sdk.AddCommonBandwidthPackageIp(cbpInfo.ID, eipInfo.AllocationId)
@@ -274,7 +272,7 @@ func (m *Manager) ScaleDown(currentBandwidthRate float64, reporter *ManagerRepor
 				AllocationId: currentIP.AllocationId,
 			}
 			lowestEIPs = append(lowestEIPs, entity)
-			reporter.AddContent(fmt.Sprintf(REMOVE_EIP_TEMPLATE, entity.AllocationId, entity.IpAddress))
+			reporter.AddContent(fmt.Sprintf(REMOVE_EIP_TEMPLATE, entity.IpAddress))
 			lowestEIPsAddress = append(lowestEIPsAddress, currentIP.AllocationId)
 		}
 	}

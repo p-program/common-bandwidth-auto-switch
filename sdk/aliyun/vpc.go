@@ -103,9 +103,9 @@ func (sdk *AliyunSDK) RemoveCommonBandwidthPackageIps(bandwidthPackageId string,
 	wg.Wait()
 }
 
-// DescribeEipAvgMonitorData 获取 EIP 监控信息流入和流出的带宽总和平均值
+// DescribeEipAvgMonitorData 获取 EIP 监控信息流出的带宽总和平均值
 // avgBandwidth 单位是 Mbps
-func (sdk *AliyunSDK) DescribeEipAvgMonitorData(allocationId string, checkFrequency string) (avgBandwidth float64, err error) {
+func (sdk *AliyunSDK) DescribeEipAvgMonitorData(allocationId string, checkFrequency string) (avgOutBandwidth float64, err error) {
 	datas, err := sdk.DescribeEipMonitorData(allocationId, checkFrequency)
 	if err != nil {
 		log.Err(err)
@@ -113,13 +113,12 @@ func (sdk *AliyunSDK) DescribeEipAvgMonitorData(allocationId string, checkFreque
 	}
 	var sum float64 = 0
 	for _, data := range datas {
-		// EipFlow = 流入和流出的带宽总和
-		// EipBandwidth 带宽值，该值等于EipFlow/60，单位为B/S
-		sum += float64(data.EipBandwidth)
+		// EipTX: 流出的带宽。单位为Byte。
+		sum += float64(data.EipTX / 60)
 	}
 	// 1 Mbps = 131072 B/S
-	avgBandwidth = sum / float64(len(datas)*131072)
-	return avgBandwidth, nil
+	avgOutBandwidth = sum / float64(len(datas)*131072)
+	return avgOutBandwidth, nil
 }
 
 // DescribeEipMonitorData 调用DescribeEipMonitorData接口查看EIP的监控信息。
@@ -164,7 +163,7 @@ func (sdk *AliyunSDK) DescribeInuseEipAddresses() ([]vpc.EipAddress, error) {
 	return response.EipAddresses.EipAddress, err
 }
 
-// GetCurrentEipAddressesExceptCBWP 获取未绑定共享带宽的EIP列表
+// GetCurrentEipAddressesExceptCBWP 获取当前 region 下未绑定共享带宽的IP列表
 // cbwpID 共享带宽ID
 func (sdk *AliyunSDK) GetCurrentEipAddressesExceptCBWP(cbwpID string) (finalList []vpc.EipAddress, err error) {
 	list, err := sdk.DescribeInuseEipAddresses()
