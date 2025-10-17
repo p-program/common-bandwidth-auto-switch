@@ -1,5 +1,4 @@
 ![wtfpl](http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-1.png)
-[![Build Status](https://travis-ci.com/zeusro/common-bandwidth-auto-switch.svg?branch=master)](https://travis-ci.com/zeusro/common-bandwidth-auto-switch)
 
 # common-bandwidth-auto-switch
 
