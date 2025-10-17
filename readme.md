@@ -1,45 +1,46 @@
-![wtfpl](http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-1.png)
-
 # common-bandwidth-auto-switch
+
+![wtfpl](http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-1.png)
+[中文文档](readme.zh.md)
 
 ## why
 
-阿里云增强型95付费的共享带宽,保底200Mbps,最低消费200*0.2=40Mbps,经过我计算,我觉得在40~50Mbps时使用比较合理.
+Alibaba Cloud’s fancy 95-tier shared bandwidth plan guarantees a minimum of 200Mbps, with a minimum spend of 200*0.2=40Mbps. After some serious number crunching (and a bit of guesswork), I figured that using it somewhere between 40~50Mbps is the sweet spot.
 
-由于2020年春节+武汉冠状肺炎的严重影响,网站流量急剧减少.所以我把所有的IP都纳入了共享带宽.
+Thanks to the 2020 Chinese New Year + Wuhan’s infamous coronavirus party crasher, website traffic plummeted faster than my motivation on a Monday morning. So, I shoved all the IPs into the shared bandwidth pool.
 
-2020-03-05 13:20 星期四,百度在爬我们站点,带宽瞬间达到200Mbps.
+On 2020-03-05 at 13:20 (Thursday, because why not), Baidu decided to crawl our site like a caffeine-fueled spider, and bandwidth instantly shot up to 200Mbps.
 
-原本我想把EIP脱离共享带宽,结果那天下午我刚睡醒，智商只有平时10%，没看清楚电脑屏幕，错误地移除了EIP绑定的SLB,造成了网站无法访问.
+I originally planned to yank the EIP out of the shared bandwidth. But that afternoon, freshly woken from a nap, operating at a solid 10% brainpower, I misread the screen and accidentally removed the SLB bound to the EIP, causing the site to go *poof* and become unreachable.
 
-![](/img/guo.jpg)
+![img](/img/guo.jpg)
 
-痛定思痛，我决定,开发一个自动管理调整共享带宽EIP池的程序让他在
+After licking my wounds, I vowed to develop an automatic program to manage and adjust the shared bandwidth EIP pool so that it can:
 
-1. 流量低峰时把EIP纳入共享带宽,节约流量费用;
-1. 带宽高峰时让EIP移出共享带宽,提高带宽利用率.
+1. During low traffic periods, shove EIPs into the shared bandwidth to save money;
+1. During bandwidth rush hour, yank EIPs out of the shared bandwidth to boost bandwidth utilization.
 
-最终最大程度地优化费用支出.
+All in all, to squeeze out every last drop of cost optimization.
 
-![](/img/b.jpg)
+![img](/img/b.jpg)
 
 ## feature
 
-当前共享带宽 > 期望值（maxBandwidth）时,自动把高带宽的EIP移除出共享带宽
+When current shared bandwidth > desired threshold (maxBandwidth), automatically kick out the high-bandwidth EIPs from the shared bandwidth pool.
 
-当前共享带宽 < 期望值（(maxBandwidth+minBandwidth)/2）时,自动把高带宽的EIP添加入共享带宽
+When current shared bandwidth < desired threshold ((maxBandwidth+minBandwidth)/2), automatically invite high-bandwidth EIPs back into the shared bandwidth pool.
 
-核心算法是`动态规划`。
+The core algorithm is `dynamic programming`. Fancy, right?
 
-带宽达到均衡态之后，你就会发现这个程序一点卵用都没有，基本不会触发什么伸缩。
+Once bandwidth reaches equilibrium, you’ll realize this program is about as useful as a chocolate teapot — it barely triggers any scaling at all.
 
 ![](/img/fly.jpg)
 
 ## usage
 
-### RAM授权
+### RAM Permissions
 
-用到的接口:
+APIs used:
 
 ```bash
 vpc
@@ -55,18 +56,18 @@ cms
 DescribeMetricList
 ```
 
-由于需要操作VPC和共享带宽，这类都属于**高危操作**，RAM授权记得弄好。
+Because you’re messing with VPC and shared bandwidth — aka **high-risk operations** — make sure your RAM permissions are on point.
 
-如果你对授权不敏感，可以直接添加下列权限
+If you’re feeling lazy about permissions, just slap on these:
 
 1. AliyunVPCFullAccess
 1. AliyunEIPFullAccess
 1. AliyunCloudMonitorFullAccess
 1. AliyunCommonBandwidthPackageFullAccess
 
-### 配置文件
+### Configuration File
 
-参照 `config-example.yaml` 修改 `config.yaml` 配置文件.
+Copy `config-example.yaml` to `config.yaml` and tweak it to your heart’s content.
 
 ```bash
 cp config-example.yaml config.yaml
@@ -86,7 +87,7 @@ docker-compose up
 
 ### kubernetes
 
-例子使用了 Kubernetes 的 `CronJob` + `Configmap` 的方式部署
+Here’s an example of deploying with Kubernetes using a `CronJob` + `Configmap` combo, because why not?
 
 ```bash
 kubectl create configmap cbwp-config --from-file=config.yaml=config.yaml
@@ -94,7 +95,7 @@ kubectl create configmap cbwp-config --from-file=config.yaml=config.yaml
 kubectl apply -f deploy/kubernetes/cronjob.yaml
 ```
 
-配置的加载顺序为:先读取 `config.yaml` , `config.yaml`不存在再读取 `config-example.yaml`文件.
+Configuration loading order: tries `config.yaml` first; if missing, falls back to `config-example.yaml`.
 
 ## rm -rf /
 
@@ -105,5 +106,7 @@ kubectl delete configmap cbwp-config
 
 ## todo(NEVER DO)
 
-1. 阻塞,周期性运行,再加上健康检查
-1. 多实例运行
+1. Make it blocking, run periodically, and add health checks.
+1. Run multiple instances.
+
+Because who doesn’t love living on the edge?
